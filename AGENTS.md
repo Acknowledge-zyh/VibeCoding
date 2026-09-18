@@ -38,9 +38,18 @@
 
 ## 六、今天（Day 1）的验收标准
 
-- [ ] WorkBuddy 可用
-- [ ] Git 可用（WorkBuddy 自带 git 2.55.0）
-- [ ] Node.js 可用（v22.22.2）
+- [x] WorkBuddy 可用
+- [x] Git 可用（WorkBuddy 自带 git 2.55.0）
+- [x] Node.js 可用（v22.22.2）
 - [x] GitHub 账号已注册（2026-09-16）
-- [ ] 工作区文件夹已建好，且里面有本文件（AGENTS.md）
-- [ ] 能用自己的话说清：vibe coding 是什么、skill 是什么
+- [x] 工作区文件夹已建好，且里面有本文件（AGENTS.md）
+- [x] 能用自己的话说清：vibe coding 是什么、skill 是什么
+
+## 七、Day 2 状态记录（2026-09-17）
+
+- [x] Git 仓库初始化（main 分支），提交 52a2050、db1b9ce
+- [x] index.html 占位页、.gitignore 忽略规则（含 .env/密钥/本地数据库）
+- [x] 远程地址已预设：git@github.com:Acknowledge-zyh/VibeCoding.git
+- [x] GitHub 网页建仓库（2026-09-18）
+- [x] GitHub 添加 SSH 公钥（2026-09-18）
+- [x] 首次推送 git push -u origin main（2026-09-18，main 已跟踪 origin/main）
