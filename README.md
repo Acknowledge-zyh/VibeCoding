@@ -44,3 +44,31 @@ npx serve .
 ## 本期明确不做（遵守任务边界）
 
 登录、支付、复杂缓存、数据库、React/Vite 框架——均按 PRD 3.2 与 TECH_DESIGN 第 14 章推迟。
+
+## 部署到 CloudBase 静态托管（第 2 步，路线已定：方案 B）
+
+**每次改完代码的固定流程**（先提交、再部署，TECH_DESIGN 10.5）：
+
+```
+node scripts/sync-dist.js     # ① 把最新静态文件同步进 dist/
+git add ... && git commit ... # ② 提交（标题 Day X｜…）
+git push                      # ③ 推送
+# ④ 部署 dist/ → 线上验证刚改的行为
+```
+
+**首次部署（等你开通环境后做）**
+
+1. 开通 CloudBase 环境（见下方「你的动作」），记下**环境 ID**（形如 `cloud1-xxxxx`）
+2. 把环境 ID 填进 `cloudbaserc.json` 的 `envId`（换环境只改这一处）
+3. 部署二选一：
+   - **CLI**：`npx tcb login`（浏览器授权）→ `npx tcb hosting deploy dist -e 你的环境ID`
+   - **控制台**：CloudBase 控制台 → 静态网站托管 → 文件管理 → 把 `dist/` 里的内容上传
+4. 浏览器打开默认域名 → 应看到四列热搜页；手机再开一次 → 单列无横滚
+5. 关掉电脑、换台设备再开一次 → 页面还在（B12 前置验证）
+
+**你的动作（一次性的账号准备，我无法代办）**
+
+- 登录腾讯云 https://cloud.tencent.com → 完成实名认证
+- 开通云开发 CloudBase：https://tcb.cloud.tencent.com/ → 创建环境
+- ⚠️ 创建环境时**数据库类型选 PostgreSQL**（本期不用，但类型事后不可改，为二期占位——TECH_DESIGN 3.3 取舍二）
+- 把环境 ID 发我，我带你走完部署

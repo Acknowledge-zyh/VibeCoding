@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Tencent/cloudbase-framework/master/packages/cloudbase-framework-registry/schema/cloudbaserc.json",
+  "_说明": "CloudBase 部署配置模板。envId 换成你控制台里的真实环境 ID（形如 cloud1-xxxxx）后即可用 CLI 部署。换环境只改这一处（TECH_DESIGN 11.5）。",
+  "envId": "YOUR_ENV_ID",
+  "functionRoot": "./cloudfunctions",
+  "region": "ap-shanghai"
+}

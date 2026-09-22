@@ -149,3 +149,10 @@
 - [x] 功能实现：F1 四列榜单、F2 详情弹层（Esc/点外部关闭）、F3 本地收藏+备注（hot_favorites_v1，≤50 字）、F4 手动+10 分钟自动刷新、F5 桌面四列/移动端单列
 - [x] 运行验证：python -m http.server 8000，页面与资源全部 HTTP 200；运行命令已存档 README.md
 - [ ] 首次部署到 CloudBase 静态托管（TECH_DESIGN 10.2 计划 Day 7 完成，因 Q1/Q2 腾讯云账号未确认，暂挂起为待办）
+
+## 十八、Day 7 部署准备（2026-09-22，路线已确认：方案 B）
+
+- [x] 用户已拍板部署路线：**CloudBase 云开发全托管（方案 B）**
+- [x] Q9 实测有答案：本机 npm 10.9.7 可安装 CloudBase CLI（装在 Node 托管工作区，tcb 命令就绪）——部署可走 CLI，不必控制台手工上传
+- [x] 部署准备完成：`dist/` 部署目录（已加入 .gitignore，不入库）、`scripts/sync-dist.js` 同步脚本、`cloudbaserc.json` 配置模板（envId 待填）、README 新增部署章节
+- [ ] **等待用户**：① 腾讯云实名 ② 开通 CloudBase 环境（**数据库类型选 PostgreSQL**）③ 把环境 ID 填入 cloudbaserc.json 或告知 AI
