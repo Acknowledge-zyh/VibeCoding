@@ -1,40 +1,73 @@
 <!DOCTYPE html>
+<!-- 「今日热搜」主页面 ｜ MVP v0（Day 7）
+     结构对齐 PRD 5.1：顶栏 + 四列板块 + 详情弹层 + 收藏抽屉
+     当前阶段：本地样本数据（Day 8 起接云函数换真实数据） -->
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VibeCoding 学习项目</title>
-  <style>
-    body {
-      font-family: "Microsoft YaHei", sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f5f6fa;
-      color: #333;
-    }
-    main { text-align: center; padding: 40px; }
-    h1 { font-size: 28px; margin-bottom: 8px; }
-    p { color: #888; }
-    .badge {
-      display: inline-block;
-      margin-top: 16px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: #e8f0fe;
-      color: #185fa5;
-      font-size: 14px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>今日热搜</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <h1>🚀 VibeCoding 之路，正式出发</h1>
-    <p>这是我的第一个占位页面，由 AI 在 Day 2 代办创建。</p>
-    <p>真正的网站功能将在 Day 7 上线 MVP。</p>
-    <span class="badge">Day 2 · 首次提交 · 仓库已激活</span>
-  </main>
+  <!-- 顶栏：标题 + 更新时间 + 收藏入口 + 刷新 -->
+  <header class="topbar">
+    <h1 class="topbar-title">今日热搜</h1>
+    <span class="topbar-time" id="updated-at">更新中…</span>
+    <span class="sample-badge" id="sample-badge">样本数据</span>
+    <div class="topbar-actions">
+      <button class="btn" id="btn-favorites">我的收藏 (<span id="fav-count">0</span>)</button>
+      <button class="btn btn-primary" id="btn-refresh">刷新</button>
+    </div>
+  </header>
+
+  <!-- 提示条：样本数据说明（阶段 2 移除） -->
+  <div class="notice" id="notice">
+    当前展示的是本地样本数据，用于跑通页面骨架；Day 8 起接入云函数后替换为真实热搜。
+  </div>
+
+  <!-- 四列板块：由 app.js 渲染 -->
+  <main class="board" id="board" aria-label="热搜榜单"></main>
+
+  <!-- 浮层 1：详情弹层 -->
+  <div class="overlay hidden" id="detail-overlay">
+    <div class="modal" id="detail-modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="detail-close" aria-label="关闭">×</button>
+      <div class="modal-meta">
+        <span class="modal-platform" id="detail-platform"></span>
+        <span class="modal-rank" id="detail-rank"></span>
+        <span class="modal-heat" id="detail-heat"></span>
+        <span class="modal-time" id="detail-time"></span>
+      </div>
+      <h2 class="modal-title" id="detail-title"></h2>
+      <div class="modal-actions">
+        <button class="btn" id="detail-fav">☆ 收藏</button>
+        <button class="btn" id="detail-note">✎ 写备注</button>
+        <a class="btn btn-primary" id="detail-link" target="_blank" rel="noopener">去原平台查看 ↗</a>
+      </div>
+      <div class="note-area hidden" id="note-area">
+        <textarea id="note-input" maxlength="50" placeholder="写一句备注（最多 50 字）…"></textarea>
+        <div class="note-actions">
+          <span class="note-count" id="note-count">0/50</span>
+          <button class="btn btn-primary btn-sm" id="note-save">保存备注</button>
+        </div>
+      </div>
+      <p class="note-view hidden" id="note-view"></p>
+    </div>
+  </div>
+
+  <!-- 浮层 2：收藏列表抽屉 -->
+  <div class="overlay hidden" id="fav-overlay">
+    <aside class="drawer" role="dialog" aria-modal="true" aria-label="我的收藏">
+      <div class="drawer-head">
+        <h2>我的收藏</h2>
+        <button class="modal-close" id="fav-close" aria-label="关闭">×</button>
+      </div>
+      <p class="drawer-hint">收藏仅保存在本机浏览器，清除浏览器数据会丢失。</p>
+      <ul class="fav-list" id="fav-list"></ul>
+    </aside>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>

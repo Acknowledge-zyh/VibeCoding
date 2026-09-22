@@ -1,0 +1,55 @@
+{
+  "_note": "本地样本数据（阶段 1 用）。字段结构对齐 TECH_DESIGN.md 5.2 HotResponse，Day 8 接云函数后此文件保留作兜底。标题与热度均为示例，非真实榜单。",
+  "updated_at": "2026-09-22T12:30:00+08:00",
+  "platforms": [
+    { "name": "微博", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
+    { "name": "百度", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
+    { "name": "知乎", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
+    { "name": "抖音", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" }
+  ],
+  "items": [
+    { "platform": "微博", "rank": 1,  "title": "样本：全国多地迎来秋分降温，多地气温创新低", "url": "https://s.weibo.com/top/summary", "heat": "4863210", "time": "12:10" },
+    { "platform": "微博", "rank": 2,  "title": "样本：新一期贷款市场报价利率公布", "url": "https://s.weibo.com/top/summary", "heat": "4210553", "time": "11:45" },
+    { "platform": "微博", "rank": 3,  "title": "样本：国产大飞机新增两条直飞航线", "url": "https://s.weibo.com/top/summary", "heat": "3988760", "time": "11:20" },
+    { "platform": "微博", "rank": 4,  "title": "样本：高校食堂推出自助称重计费窗口引热议", "url": "https://s.weibo.com/top/summary", "heat": "3452118", "time": "10:58" },
+    { "platform": "微博", "rank": 5,  "title": "样本：中秋假期火车票今日开售", "url": "https://s.weibo.com/top/summary", "heat": "3122845", "time": "10:30" },
+    { "platform": "微博", "rank": 6,  "title": "样本：科学家发布新型电池快充研究进展", "url": "https://s.weibo.com/top/summary", "heat": "2870019", "time": "10:02" },
+    { "platform": "微博", "rank": 7,  "title": "样本：多地博物馆宣布延长夜间开放时间", "url": "https://s.weibo.com/top/summary", "heat": "2541188", "time": "09:40" },
+    { "platform": "微博", "rank": 8,  "title": "样本：快递新规征求意见：末端配送更灵活", "url": "https://s.weibo.com/top/summary", "heat": "2210846", "time": "09:15" },
+    { "platform": "微博", "rank": 9,  "title": "样本：秋季招聘会首场线上线下同步举行", "url": "https://s.weibo.com/top/summary", "heat": "1988754", "time": "08:50" },
+    { "platform": "微博", "rank": 10, "title": "样本：城市马拉松报名通道本周五开启", "url": "https://s.weibo.com/top/summary", "heat": "1764310", "time": "08:20" },
+
+    { "platform": "百度", "rank": 1,  "title": "样本：秋分节气养生要点一览", "url": "https://top.baidu.com/board?tab=realtime", "heat": "3987421", "time": "12:15" },
+    { "platform": "百度", "rank": 2,  "title": "样本：新版居民身份证异地补办指南发布", "url": "https://top.baidu.com/board?tab=realtime", "heat": "3612450", "time": "11:50" },
+    { "platform": "百度", "rank": 3,  "title": "样本：多个景区宣布门票优惠政策", "url": "https://top.baidu.com/board?tab=realtime", "heat": "3255118", "time": "11:22" },
+    { "platform": "百度", "rank": 4,  "title": "样本：全国铁路第四季度运行图调整", "url": "https://top.baidu.com/board?tab=realtime", "heat": "2890346", "time": "10:55" },
+    { "platform": "百度", "rank": 5,  "title": "样本：新研究显示适量午睡有助记忆力", "url": "https://top.baidu.com/board?tab=realtime", "heat": "2533689", "time": "10:28" },
+    { "platform": "百度", "rank": 6,  "title": "样本：数字人民币试点新增三个城市", "url": "https://top.baidu.com/board?tab=realtime", "heat": "2245902", "time": "09:58" },
+    { "platform": "百度", "rank": 7,  "title": "样本：台风路径更新：沿海地区做好防范", "url": "https://top.baidu.com/board?tab=realtime", "heat": "2011234", "time": "09:32" },
+    { "platform": "百度", "rank": 8,  "title": "样本：新版教材九月起陆续投入使用", "url": "https://top.baidu.com/board?tab=realtime", "heat": "1876532", "time": "09:05" },
+    { "platform": "百度", "rank": 9,  "title": "样本：新能源汽车下乡活动启动", "url": "https://top.baidu.com/board?tab=realtime", "heat": "1654210", "time": "08:38" },
+    { "platform": "百度", "rank": 10, "title": "样本：多地发布大雾黄色预警", "url": "https://top.baidu.com/board?tab=realtime", "heat": "1430987", "time": "08:10" },
+
+    { "platform": "知乎", "rank": 1,  "title": "样本：如何评价今年的就业形势与求职建议？", "url": "https://www.zhihu.com/hot", "heat": "2867543", "time": "12:05" },
+    { "platform": "知乎", "rank": 2,  "title": "样本：长期使用信用卡分期有哪些隐性成本？", "url": "https://www.zhihu.com/hot", "heat": "2543210", "time": "11:35" },
+    { "platform": "知乎", "rank": 3,  "title": "样本：为什么越来越多的年轻人开始学做饭？", "url": "https://www.zhihu.com/hot", "heat": "2298765", "time": "11:02" },
+    { "platform": "知乎", "rank": 4,  "title": "样本：有哪些适合秋天的城市徒步路线？", "url": "https://www.zhihu.com/hot", "heat": "2086543", "time": "10:40" },
+    { "platform": "知乎", "rank": 5,  "title": "样本：如何科学地规划每月存款比例？", "url": "https://www.zhihu.com/hot", "heat": "1876532", "time": "10:12" },
+    { "platform": "知乎", "rank": 6,  "title": "样本：读研和工作三年，哪个更值得选？", "url": "https://www.zhihu.com/hot", "heat": "1654321", "time": "09:48" },
+    { "platform": "知乎", "rank": 7,  "title": "样本：如何看待 AI 工具进入中小学课堂？", "url": "https://www.zhihu.com/hot", "heat": "1432109", "time": "09:20" },
+    { "platform": "知乎", "rank": 8,  "title": "样本：有哪些提高睡眠质量的实用方法？", "url": "https://www.zhihu.com/hot", "heat": "1287654", "time": "08:52" },
+    { "platform": "知乎", "rank": 9,  "title": "样本：租房时如何避开常见的合同陷阱？", "url": "https://www.zhihu.com/hot", "heat": "1102468", "time": "08:25" },
+    { "platform": "知乎", "rank": 10, "title": "样本：新手跑步如何循序渐进不伤膝盖？", "url": "https://www.zhihu.com/hot", "heat": "986543", "time": "08:00" },
+
+    { "platform": "抖音", "rank": 1,  "title": "样本：秋分日全民晒丰收，乡村晒秋太治愈", "url": "https://www.douyin.com/hot", "heat": "5210344", "time": "12:20" },
+    { "platform": "抖音", "rank": 2,  "title": "样本：大爷用竹编还原老街全景，网友直呼高手", "url": "https://www.douyin.com/hot", "heat": "4765210", "time": "11:55" },
+    { "platform": "抖音", "rank": 3,  "title": "样本：高校开学典礼硬核无人机灯光秀", "url": "https://www.douyin.com/hot", "heat": "4321876", "time": "11:28" },
+    { "platform": "抖音", "rank": 4,  "title": "样本：消防员逆行背影感动整条街", "url": "https://www.douyin.com/hot", "heat": "3876543", "time": "10:50" },
+    { "platform": "抖音", "rank": 5,  "title": "样本：跟着非遗传承人学做传统糕点", "url": "https://www.douyin.com/hot", "heat": "3432109", "time": "10:22" },
+    { "platform": "抖音", "rank": 6,  "title": "样本：高铁上这一幕被拍下，网友怒赞", "url": "https://www.douyin.com/hot", "heat": "3098765", "time": "09:55" },
+    { "platform": "抖音", "rank": 7,  "title": "样本：小学生运动会开幕式创意入场式", "url": "https://www.douyin.com/hot", "heat": "2765432", "time": "09:28" },
+    { "platform": "抖音", "rank": 8,  "title": "样本：秋天的第一场露营装备清单来了", "url": "https://www.douyin.com/hot", "heat": "2432109", "time": "09:00" },
+    { "platform": "抖音", "rank": 9,  "title": "样本：外卖小哥雨中护送老人回家", "url": "https://www.douyin.com/hot", "heat": "2109876", "time": "08:32" },
+    { "platform": "抖音", "rank": 10, "title": "样本：城市夜市经济点亮街头烟火气", "url": "https://www.douyin.com/hot", "heat": "1876543", "time": "08:05" }
+  ]
+}
