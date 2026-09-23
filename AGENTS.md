@@ -157,3 +157,11 @@
 - [x] 部署准备完成：`dist/` 部署目录（已加入 .gitignore，不入库）、`scripts/sync-dist.js` 同步脚本、`cloudbaserc.json` 配置模板（envId 待填）、README 新增部署章节
 - [x] **等待用户**：① 腾讯云实名 ✅ ② 开通 CloudBase 环境 ✅（环境 ID：acknowledge-d9gnqrpy89f1f7d21，体验版至 2027-03-22）③ envId 已填入 cloudbaserc.json ✅
 - [x] tcb login 授权成功（CLI 3.8.3）；`tcb hosting deploy dist` 部署成功；线上 4 资源 HTTP 200、数据完整——**项目正式上线** 🎉
+
+## 十九、Day 8 状态记录（2026-09-23）
+
+- [x] 主视图 mock 数据版已在本地运行（沿用 Day 7 成果，本日不接真实 API、不加登录）
+- [x] **四种页面状态补齐**：加载中（骨架屏动画）/ 正常（四列榜单）/ 空数据 / 出错（含重新加载按钮）——绝不显示空白页（PRD 5.3）
+- [x] **可复用组件**：`createItemRow(item)` 条目卡片、`renderState(kind)` 状态视图（余力加练）
+- [x] 状态预览开关：`?state=loading|empty|error`（仅开发调试，重试按钮会自动清参回到正常态）
+- [x] 验证：真实浏览器逐状态渲染 + 重试交互实测通过；四种状态截图存 `打卡/状态截图/`（本地留存）

@@ -1,7 +1,12 @@
-/* 「今日热搜」前端逻辑 ｜ MVP v0（Day 7）
+/* 「今日热搜」前端逻辑 ｜ MVP v1（Day 8）
    职责（对齐 TECH_DESIGN 7.1 步骤⑥-⑨）：
    ⑤ 渲染四列（失败板块降级提示） ⑥ 详情弹层 / 刷新 ⑧ 收藏写 localStorage ⑨ 下次打开读回
-   数据来源：阶段 1 用 data/hot.json（样本）；阶段 2 只需把 DATA_URL 换成云函数 /api/hot 地址 */
+   数据来源：阶段 1 用 data/hot.json（样本）；阶段 2 只需把 DATA_URL 换成云函数 /api/hot 地址
+
+   Day 8 新增：
+   1. 四种页面状态：加载中 / 正常 / 空数据 / 出错（PRD 5.3）
+   2. 可复用组件：createItemRow(条目卡片)、renderState(状态视图)
+   3. 状态预览开关：地址后加 ?state=loading|empty|error 可强制查看某种状态（仅开发调试用） */
 
 // ===== 配置 =====
 // 阶段 2 接云函数时，只改这一行（TECH_DESIGN 6.1：API_BASE 收在一处）
@@ -78,6 +83,82 @@ function refreshFavBadge() {
   $("fav-count").textContent = loadFavorites().length;
 }
 
+// ===== 可复用组件 1：单条热搜卡片（Day 8 抽出，以后别处也能复用）=====
+// 传入一条热搜数据，返回一个可直接插入页面的元素
+function createItemRow(item) {
+  const row = document.createElement("div");
+  const faved = isFaved(item);
+  row.className = "item" + (faved ? " faved" : "");
+  row.innerHTML =
+    '<span class="item-rank">' + item.rank + "</span>" +
+    '<span class="item-title">' + item.title + "</span>" +
+    (item.heat ? '<span class="item-heat">' + item.heat + " 热</span>" : "") +
+    '<button class="item-star' + (faved ? " faved" : "") + '" aria-label="收藏">★</button>';
+
+  // 点整行 → 详情弹层
+  row.addEventListener("click", () => openDetail(item));
+  // 点星标 → 收藏（阻止冒泡，不打开详情）
+  row.querySelector(".item-star").addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleFav(item);
+    renderBoard(); // 重新着色 + 角标
+    if (currentDetail && favKey(currentDetail) === favKey(item)) syncDetailFavBtn();
+  });
+  return row;
+}
+
+// ===== 可复用组件 2：整页状态视图（加载中 / 空数据 / 出错）=====
+// kind: "loading" | "empty" | "error"
+function renderState(kind) {
+  const board = $("board");
+  board.innerHTML = "";
+
+  const box = document.createElement("div");
+  box.className = "state-block state-" + kind;
+
+  if (kind === "loading") {
+    // 加载中：骨架屏占位，让用户知道在干活，而不是白屏
+    box.innerHTML =
+      '<div class="state-icon">⏳</div>' +
+      '<p class="state-text">正在获取最新热搜…</p>' +
+      '<div class="skeleton-wrap">' +
+        '<div class="skeleton-col"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>' +
+        '<div class="skeleton-col"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>' +
+        '<div class="skeleton-col"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>' +
+        '<div class="skeleton-col"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>' +
+      "</div>";
+  } else if (kind === "empty") {
+    // 空数据：请求成功，但一条热搜都没有
+    box.innerHTML =
+      '<div class="state-icon">🍃</div>' +
+      '<p class="state-text">今天还没有热搜数据</p>' +
+      '<p class="state-sub">稍后点「刷新」再看看</p>' +
+      '<button class="btn" id="state-retry">刷新试试</button>';
+  } else {
+    // 出错：请求失败（网络问题、服务未启动等）
+    box.innerHTML =
+      '<div class="state-icon">⚠️</div>' +
+      '<p class="state-text">数据获取失败</p>' +
+      '<p class="state-sub">可能是网络问题，稍后重试即可</p>' +
+      '<button class="btn btn-primary" id="state-retry">重新加载</button>';
+  }
+
+  board.appendChild(box);
+
+  const retry = $("state-retry");
+  if (retry) retry.addEventListener("click", handleRetry);
+}
+
+// 点「重新加载 / 刷新试试」：
+// 如果是用 ?state= 强制预览的，就清掉参数回到正常加载；否则重新拉数据
+function handleRetry() {
+  if (new URLSearchParams(location.search).get("state")) {
+    location.href = location.pathname;
+    return;
+  }
+  loadData();
+}
+
 // ===== 渲染四列 =====
 function renderBoard() {
   const board = $("board");
@@ -105,26 +186,8 @@ function renderBoard() {
       return;
     }
 
-    items.forEach((it) => {
-      const row = document.createElement("div");
-      row.className = "item" + (isFaved(it) ? " faved" : "");
-      row.innerHTML =
-        '<span class="item-rank">' + it.rank + "</span>" +
-        '<span class="item-title">' + it.title + "</span>" +
-        (it.heat ? '<span class="item-heat">' + it.heat + " 热</span>" : "") +
-        '<button class="item-star' + (isFaved(it) ? " faved" : "") + '" aria-label="收藏">★</button>';
-
-      // 点整行 → 详情弹层
-      row.addEventListener("click", () => openDetail(it));
-      // 点星标 → 收藏（阻止冒泡，不打开详情）
-      row.querySelector(".item-star").addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleFav(it);
-        renderBoard(); // 重新着色 + 角标
-        if (currentDetail && favKey(currentDetail) === favKey(it)) syncDetailFavBtn();
-      });
-      col.appendChild(row);
-    });
+    // 用可复用组件逐条渲染
+    items.forEach((it) => col.appendChild(createItemRow(it)));
 
     board.appendChild(col);
   });
@@ -244,19 +307,40 @@ function closeFavorites() {
   $("fav-overlay").classList.add("hidden");
 }
 
-// ===== 数据加载与刷新 =====
+// ===== 数据加载与刷新（Day 8：串联四种页面状态）=====
 function loadData() {
+  // 开发调试开关：地址后加 ?state=loading|empty|error 可强制展示某种状态（仅供打卡/演示）
+  const forced = new URLSearchParams(location.search).get("state");
+  if (forced === "loading" || forced === "empty" || forced === "error") {
+    $("updated-at").textContent = "状态预览：" + forced;
+    renderState(forced);
+    return;
+  }
+
+  // ① 加载中：先给用户一个"正在干活"的反馈，避免白屏
+  $("updated-at").textContent = "正在更新…";
+  renderState("loading");
+
   fetch(DATA_URL)
     .then((res) => res.json())
     .then((data) => {
       hotData = data;
       $("updated-at").textContent = "更新于 " + fmtTime(data.updated_at);
-      renderBoard();
       refreshFavBadge();
+
+      // ② 空数据：请求成功但没有任何条目
+      if (!data.items || data.items.length === 0) {
+        renderState("empty");
+        return;
+      }
+
+      // ③ 正常：渲染四列
+      renderBoard();
     })
     .catch(() => {
-      // 对齐 PRD 第 7 节：绝不显示空白页
-      $("updated-at").textContent = "数据加载失败，请点刷新重试";
+      // ④ 出错：对齐 PRD 第 7 节，绝不显示空白页，给出重试入口
+      $("updated-at").textContent = "更新失败";
+      renderState("error");
     });
 }
 
