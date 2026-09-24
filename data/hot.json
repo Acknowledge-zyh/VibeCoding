@@ -1,11 +1,12 @@
 {
-  "_note": "本地样本数据（阶段 1 用）。字段结构对齐 TECH_DESIGN.md 5.2 HotResponse，Day 8 接云函数后此文件保留作兜底。标题与热度均为示例，非真实榜单。",
-  "updated_at": "2026-09-22T12:30:00+08:00",
+  "_note": "本地样本数据（阶段 1 用）。字段结构对齐 TECH_DESIGN.md 5.2 HotResponse，接云函数后此文件保留作兜底。标题与热度均为示例，非真实榜单。首页当前展示哪几个平台由 app.js 的 PLATFORM_ORDER 决定（现在是 微博/抖音/B站）；这里的百度、知乎数据保留未删，改一行白名单即可恢复多平台。",
+  "updated_at": "2026-09-23T11:40:00+08:00",
   "platforms": [
-    { "name": "微博", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
-    { "name": "百度", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
-    { "name": "知乎", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" },
-    { "name": "抖音", "ok": true, "message": null, "updated_at": "2026-09-22T12:30:00+08:00" }
+    { "name": "微博", "ok": true, "message": null, "updated_at": "2026-09-23T11:40:00+08:00" },
+    { "name": "百度", "ok": true, "message": null, "updated_at": "2026-09-23T11:40:00+08:00" },
+    { "name": "知乎", "ok": true, "message": null, "updated_at": "2026-09-23T11:40:00+08:00" },
+    { "name": "抖音", "ok": true, "message": null, "updated_at": "2026-09-23T11:40:00+08:00" },
+    { "name": "B站", "ok": true, "message": null, "updated_at": "2026-09-23T11:40:00+08:00" }
   ],
   "items": [
     { "platform": "微博", "rank": 1,  "title": "样本：全国多地迎来秋分降温，多地气温创新低", "url": "https://s.weibo.com/top/summary", "heat": "4863210", "time": "12:10" },
@@ -50,6 +51,17 @@
     { "platform": "抖音", "rank": 7,  "title": "样本：小学生运动会开幕式创意入场式", "url": "https://www.douyin.com/hot", "heat": "2765432", "time": "09:28" },
     { "platform": "抖音", "rank": 8,  "title": "样本：秋天的第一场露营装备清单来了", "url": "https://www.douyin.com/hot", "heat": "2432109", "time": "09:00" },
     { "platform": "抖音", "rank": 9,  "title": "样本：外卖小哥雨中护送老人回家", "url": "https://www.douyin.com/hot", "heat": "2109876", "time": "08:32" },
-    { "platform": "抖音", "rank": 10, "title": "样本：城市夜市经济点亮街头烟火气", "url": "https://www.douyin.com/hot", "heat": "1876543", "time": "08:05" }
+    { "platform": "抖音", "rank": 10, "title": "样本：城市夜市经济点亮街头烟火气", "url": "https://www.douyin.com/hot", "heat": "1876543", "time": "08:05" },
+
+    { "platform": "B站", "rank": 1,  "title": "样本：秋分这一天，我把二十四节气拍成了纪录片", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "3120458", "time": "12:25" },
+    { "platform": "B站", "rank": 2,  "title": "样本：用一百种方法讲清楚一个物理定律是什么体验", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "2876543", "time": "11:58" },
+    { "platform": "B站", "rank": 3,  "title": "样本：食堂十五元吃什么？大学生测评第三十期", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "2543210", "time": "11:30" },
+    { "platform": "B站", "rank": 4,  "title": "样本：一个人的毕业旅行，从高原到海边", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "2298765", "time": "11:02" },
+    { "platform": "B站", "rank": 5,  "title": "样本：从零开始做一把木椅，手工全过程记录", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "2054321", "time": "10:35" },
+    { "platform": "B站", "rank": 6,  "title": "样本：三分钟看懂新能源汽车电池是怎么做的", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "1832109", "time": "10:08" },
+    { "platform": "B站", "rank": 7,  "title": "样本：在家复刻课本里的经典实验，成功了吗？", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "1620987", "time": "09:42" },
+    { "platform": "B站", "rank": 8,  "title": "样本：把宿舍改造成自习室，成本一百元", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "1409876", "time": "09:15" },
+    { "platform": "B站", "rank": 9,  "title": "样本：老式收音机修复记录，开机那一刻破防了", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "1218765", "time": "08:48" },
+    { "platform": "B站", "rank": 10, "title": "样本：城市骑行夜游路线推荐，全程无滤镜", "url": "https://www.bilibili.com/v/popular/rank/all", "heat": "1043652", "time": "08:20" }
   ]
 }

@@ -1,39 +1,43 @@
 <!DOCTYPE html>
-<!-- 「今日热搜」主页面 ｜ MVP v0（Day 7）
-     结构对齐 PRD 5.1：顶栏 + 四列板块 + 详情弹层 + 收藏抽屉
-     当前阶段：本地样本数据（Day 8 起接云函数换真实数据） -->
+<!-- 「今日热搜」首页 ｜ 按 PRD 重建首页前端
+     结构（对齐 PRD 5.1）：
+       ① 顶栏：标题 + 更新时间 + 我的收藏入口 + 刷新按钮
+       ② 提示条：样本数据说明 / 更新失败提示
+       ③ 榜单区：桌面三栏并排（微博 / 抖音 / B站），每栏 Top 10
+       ④ 四种页面状态：加载中 / 成功 / 空 / 错误
+     两个浮层：详情弹层（PRD F2）、收藏抽屉（PRD F3）
+     明确不做：登录、支付、个性化推荐（PRD 3.2） -->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>今日热搜</title>
+  <meta name="description" content="打开就能一屏看完的今日热搜：微博、抖音、B站三个平台的热门话题并排展示，无需登录。" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- 顶栏：标题 + 更新时间 + 收藏入口 + 刷新 -->
+  <!-- ① 顶栏：标题 + 更新时间 + 收藏入口 + 刷新 -->
   <header class="topbar">
-    <h1 class="topbar-title">今日热搜</h1>
-    <span class="topbar-time" id="updated-at">更新中…</span>
-    <span class="sample-badge" id="sample-badge">样本数据</span>
+    <div class="topbar-main">
+      <h1 class="topbar-title">今日热搜</h1>
+      <span class="topbar-time" id="updated-at">更新中…</span>
+    </div>
     <div class="topbar-actions">
-      <button class="btn" id="btn-favorites">我的收藏 (<span id="fav-count">0</span>)</button>
-      <button class="btn btn-primary" id="btn-refresh">刷新</button>
+      <button class="btn" id="btn-favorites" type="button">我的收藏（<span id="fav-count">0</span>）</button>
+      <button class="btn btn-primary" id="btn-refresh" type="button">刷新</button>
     </div>
   </header>
 
-  <!-- 提示条：样本数据说明（阶段 2 移除） -->
-  <div class="notice" id="notice">
-    当前展示的是本地样本数据（Day 8 起已补齐加载中 / 空数据 / 出错三种状态）；
-    接入云函数后替换为真实热搜。
-  </div>
+  <!-- ② 提示条：默认说明数据来源；更新失败时改用文字提醒（PRD 第 7 节：绝不显示空白页） -->
+  <p class="notice" id="notice">当前为本地样本数据（标题、热度均为示例）；接上云函数后自动换成真实热搜。</p>
 
-  <!-- 四列板块：由 app.js 渲染 -->
+  <!-- ③ 榜单区：三栏由 app.js 渲染（含四种状态） -->
   <main class="board" id="board" aria-label="热搜榜单"></main>
 
-  <!-- 浮层 1：详情弹层 -->
+  <!-- 浮层 1：详情弹层（PRD F2） -->
   <div class="overlay hidden" id="detail-overlay">
-    <div class="modal" id="detail-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" id="detail-close" aria-label="关闭">×</button>
+    <div class="modal" id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <button class="modal-close" id="detail-close" type="button" aria-label="关闭">×</button>
       <div class="modal-meta">
         <span class="modal-platform" id="detail-platform"></span>
         <span class="modal-rank" id="detail-rank"></span>
@@ -42,27 +46,27 @@
       </div>
       <h2 class="modal-title" id="detail-title"></h2>
       <div class="modal-actions">
-        <button class="btn" id="detail-fav">☆ 收藏</button>
-        <button class="btn" id="detail-note">✎ 写备注</button>
+        <button class="btn" id="detail-fav" type="button">☆ 收藏</button>
+        <button class="btn" id="detail-note" type="button">✎ 写备注</button>
         <a class="btn btn-primary" id="detail-link" target="_blank" rel="noopener">去原平台查看 ↗</a>
       </div>
       <div class="note-area hidden" id="note-area">
         <textarea id="note-input" maxlength="50" placeholder="写一句备注（最多 50 字）…"></textarea>
         <div class="note-actions">
           <span class="note-count" id="note-count">0/50</span>
-          <button class="btn btn-primary btn-sm" id="note-save">保存备注</button>
+          <button class="btn btn-primary btn-sm" id="note-save" type="button">保存备注</button>
         </div>
       </div>
       <p class="note-view hidden" id="note-view"></p>
     </div>
   </div>
 
-  <!-- 浮层 2：收藏列表抽屉 -->
+  <!-- 浮层 2：收藏列表抽屉（PRD F3） -->
   <div class="overlay hidden" id="fav-overlay">
     <aside class="drawer" role="dialog" aria-modal="true" aria-label="我的收藏">
       <div class="drawer-head">
-        <h2>我的收藏</h2>
-        <button class="modal-close" id="fav-close" aria-label="关闭">×</button>
+        <h2 class="drawer-title">我的收藏</h2>
+        <button class="modal-close" id="fav-close" type="button" aria-label="关闭">×</button>
       </div>
       <p class="drawer-hint">收藏仅保存在本机浏览器，清除浏览器数据会丢失。</p>
       <ul class="fav-list" id="fav-list"></ul>
