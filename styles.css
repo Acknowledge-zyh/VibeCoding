@@ -16,6 +16,7 @@
   --hover: #e2e7ed;          /* ★ 条目悬停底色：原 #f7f8fa（1.04:1）→ 1.24:1，DR-3 */
   --hover-strong: #d3dae3;   /* ★ 图标按钮悬停底色，比行悬停更深一档 */
   --brand: #d93025;
+  --brand-ink: #b9271d;      /* ★ Day10：红字配淡红底时用这个更深的红（#d93025 只有 4.18:1，DR-1 要 4.5） */
   --brand-soft: #fdeceb;
   --brand-soft-hover: #f9dcd9;
   --radius: 12px;            /* 卡片级圆角，全站统一（DR-8） */
@@ -82,10 +83,14 @@ body {
   display: inline-flex; align-items: center; justify-content: center;
 }
 .btn:hover { background: var(--hover); }
+/* ★ Day10（DR-3）：按压反馈——之前全站 68 个可点元素没有一个 :active，按下去没有反应 */
+.btn:active { background: var(--hover-strong); }
+.btn-primary:active { background: var(--brand); } /* 主按钮按压缩回品牌红，和 hover 的深红区分出"按住了" */
 .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-.btn-primary:hover { background: #b9271d; }
-/* 次级小按钮（抽屉/弹层内）：高度放宽到 32px，仍高于无障碍底线 24px */
-.btn-sm { padding: 0 var(--sp-3); min-height: 32px; font-size: var(--fs-xs); }
+.btn-primary:hover { background: var(--brand-ink); } /* ★ Day10：硬编码 #b9271d 收进令牌 */
+/* 次级小按钮（抽屉/弹层内）：★ Day10 高度 32→40px，DR-7 判定线是全站统一的，
+   原先"放宽到 32px"的豁免与规则矛盾——而且这几个按钮正是手机端最常点的（去原文/取消收藏/保存备注） */
+.btn-sm { padding: 0 var(--sp-3); min-height: 40px; font-size: var(--fs-xs); }
 
 /* DR-3：键盘 Tab 到任何可点击元素，都必须看得见落点 */
 .btn:focus-visible,
@@ -134,7 +139,9 @@ body {
   background: var(--brand); border-radius: 2px; vertical-align: -1px;
 }
 .column-count { font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; }
-.column-body { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-1) var(--sp-2) var(--sp-2); }
+/* ★ Day10：行间 gap 4px→8px。DR-7 要求相邻点击区间距 ≥8px 防误触，手机上 30 行连续排列尤其要紧。
+   桌面代价：每栏加高 36px，实测内容总高 850px，1440×900 下仍一屏放完 */
+.column-body { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-1) var(--sp-2) var(--sp-2); }
 
 /* ---------- 单条热搜：序号在前、标题居中截断、热度靠右、星标独立点击 ---------- */
 /* DR-5：去掉原来的 margin:2px 6px + padding 10px 这套"随手值"，
@@ -148,8 +155,10 @@ body {
   cursor: pointer;
 }
 .item:hover { background: var(--hover); }               /* ★ 悬停可见（DR-3）*/
+.item:active { background: var(--hover-strong); }       /* ★ Day10：按压反馈 */
 .item.faved { background: var(--brand-soft); }          /* 已收藏淡色底纹（PRD 5.2）*/
 .item.faved:hover { background: var(--brand-soft-hover); }
+.item.faved:active { background: var(--brand-soft-hover); }
 .item:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 
 .item-rank {
@@ -173,10 +182,11 @@ body {
   width: 40px; height: 40px;              /* 点击区 ≥40px（PRD 5.2 / DR-7）*/
   border: none; border-radius: var(--radius-sm); background: none;
   font-size: var(--fs-xl);                /* ★ 17px → 18px，并入字号阶梯（DR-6）*/
-  color: #7d8694;                         /* ★ 原 #c4c8cf（1.68:1）→ 3.68:1（DR-2）*/
+  color: #7d8694;                         /* 空心星常态 3.68:1（图标按 DR-2 判定线 3:1）*/
   cursor: pointer;
 }
 .item-star:hover { background: var(--hover-strong); color: var(--brand); }
+.item-star:active { background: var(--hover-strong); }  /* ★ Day10：按压反馈 */
 .item-star.faved { color: var(--brand); }
 
 /* 单个平台取数失败：只影响本栏（PRD 第 7 节 / B10） */
@@ -235,9 +245,13 @@ body {
   border: none; border-radius: 50%;
   background: #eef0f3; font-size: var(--fs-2xl); color: var(--ink-2); cursor: pointer;
 }
+/* ★ Day10（DR-3）：两个"×"关闭按钮此前连 hover 都没有，补齐三态 */
+.modal-close:hover { background: var(--hover-strong); color: var(--ink); }
+.modal-close:active { background: var(--hover); }
 .modal-meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: var(--sp-2); }
 .modal-platform {
-  color: var(--brand); font-weight: 700;
+  color: var(--brand-ink); /* ★ Day10：#d93025→#b9271d，实测 4.18→5.45:1（DR-1） */
+  font-weight: 700;
   background: var(--brand-soft); padding: var(--sp-1) var(--sp-2); border-radius: 6px;
 }
 .modal-title { font-size: var(--fs-xl); line-height: 1.5; margin: var(--sp-1) 0 var(--sp-4); overflow-wrap: anywhere; }

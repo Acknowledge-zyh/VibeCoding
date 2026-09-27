@@ -121,13 +121,17 @@ function createItemRow(item) {
     ? '<span class="item-heat">' + esc(fmtHeat(item.heat)) + "</span>"
     : '<span class="item-heat"></span>';
 
+  // ★ Day10：未收藏用空心 ☆、已收藏用实心 ★——原来两态都是实心 ★ 只靠颜色区分，
+  //   色盲用户无法分辨（DR-6 不能只用颜色），且"实心=未收藏"语义反直觉；
+  //   aria-label 也随状态变化，读屏器能读出当前是"收藏"还是"取消收藏"
   row.innerHTML =
     '<span class="item-rank' + (item.rank <= 3 ? " item-rank-top" : "") +
       (item.rank === 1 ? " item-rank-1" : "") + '">' + esc(item.rank) + "</span>" +
     '<span class="item-title">' + esc(item.title) + "</span>" +
     heatHtml +
     '<button class="item-star' + (faved ? " faved" : "") +
-      '" type="button" aria-label="收藏这条热搜">★</button>';
+      '" type="button" aria-label="' + (faved ? "取消收藏这条热搜" : "收藏这条热搜") + '">' +
+      (faved ? "★" : "☆") + "</button>";
 
   // 点整行 → 打开详情
   row.addEventListener("click", () => openDetail(item));
@@ -245,6 +249,8 @@ function renderBoard() {
 }
 
 // ===== 详情弹层（PRD F2）=====
+let detailScrollY = 0;    // ★ Day 10：详情弹层打开前的背景滚动位置（关闭时恢复）
+
 function openDetail(item) {
   currentDetail = item;
   $("detail-platform").textContent = item.platform;
@@ -264,6 +270,15 @@ function openDetail(item) {
   }
   $("note-area").classList.add("hidden");
 
+  // ★ Day 10 修复：弹层开着时锁住背景滚动（修复前手机上滑动会穿透到背后的列表，
+  //   关掉弹层后发现页面不在刚才的位置；实测弹层开着 scrollTo(1500) 真滚到了 1460）
+  detailScrollY = window.scrollY;                    // 记住打开前的位置
+  document.body.style.position = "fixed";
+  document.body.style.top = -detailScrollY + "px";   // 用负 top 冻结在原位（iOS 上也有效）
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+
   $("detail-overlay").classList.remove("hidden");
 }
 
@@ -274,6 +289,17 @@ function syncDetailFavBtn() {
 function closeDetail() {
   $("detail-overlay").classList.add("hidden");
   currentDetail = null;
+
+  // ★ Day 10 修复：弹层关了就解锁背景滚动，并回到打开前的位置
+  if (document.body.style.position === "fixed") {
+    const y = detailScrollY;
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, y);
+  }
 }
 
 // ===== 备注编辑（≤50 字，PRD F3 / 6.2）=====
@@ -381,6 +407,11 @@ function loadData() {
 
       // ③ 成功：渲染三栏
       renderBoard();
+
+      // 开发调试开关：?detail=open 自动打开第一条的详情弹层（仅预览用）
+      if (new URLSearchParams(location.search).get("detail") === "open") {
+        openDetail(hotData.items[0]);
+      }
     })
     .catch(() => {
       // ④ 错误：有旧数据就继续展示旧数据 + 原时间戳（PRD 第 7 节：绝不显示空白页）
