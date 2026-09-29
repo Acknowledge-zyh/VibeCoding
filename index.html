@@ -31,7 +31,16 @@
   <!-- ② 提示条：默认说明数据来源；更新失败时改用文字提醒（PRD 第 7 节：绝不显示空白页） -->
   <p class="notice" id="notice">当前为本地样本数据（标题、热度均为示例）；接上云函数后自动换成真实热搜。</p>
 
-  <!-- ③ 榜单区：三栏由 app.js 渲染（含四种状态） -->
+  <!-- ③ 筛选条（Day 12：按 skills/filter-interaction/SKILL.md 实现，三态齐全） -->
+  <div class="filter-bar">
+    <label class="filter-label" for="filter-input">关键词筛选</label>
+    <input class="filter-input" id="filter-input" type="search" autocomplete="off"
+           placeholder="试试输入：中秋" />
+    <button class="btn btn-sm" id="filter-clear" type="button" disabled>清除筛选</button>
+    <span class="filter-count" id="filter-count" aria-live="polite"></span>
+  </div>
+
+  <!-- ④ 榜单区：三栏由 app.js 渲染（含四种状态） -->
   <main class="board" id="board" aria-label="热搜榜单"></main>
 
   <!-- 浮层 1：详情弹层（PRD F2） -->

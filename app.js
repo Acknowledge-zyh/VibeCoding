@@ -23,12 +23,18 @@ const AUTO_REFRESH_MINUTES = 10;
 // ⑤ 收藏本地存储键（带版本号，方便以后改结构）
 const STORAGE_KEY = "hot_favorites_v1";
 
+// ⑥ ★ Day 12：收藏"写库"的模拟耗时（毫秒）。今天收藏先存前端本地（localStorage），不接数据库；
+//    这 500ms 模拟未来真实接口的网络延迟，用来验证"处理中按钮不可重复点击"。
+//    阶段 2 接后端时：把 persistFavorites 里的模拟换成真实 API 调用即可，界面逻辑一行不用改。
+const FAV_SAVE_DELAY_MS = 500;
+
 // 默认提示条文案（更新失败时会被临时替换）
 const NOTICE_DEFAULT = "当前为本地样本数据（标题、热度均为示例）；接上云函数后自动换成真实热搜。";
 
 // ===== 运行状态 =====
 let hotData = null;       // 最近一次成功拿到的数据（更新失败时继续用它展示）
 let currentDetail = null; // 详情弹层当前展示的条目
+let filterKeyword = "";   // ★ Day 12：当前筛选关键词（trim 后；空串 = 不筛选）
 
 // ===== 小工具 =====
 const $ = (id) => document.getElementById(id);
@@ -138,12 +144,10 @@ function createItemRow(item) {
   row.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(item); }
   });
-  // 点星标 → 只收藏，不打开详情
+  // 点星标 → 收藏/取消收藏（★ Day 12：走状态机，处理中防连点、失败自动回退），不打开详情
   row.querySelector(".item-star").addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleFav(item);
-    renderBoard();
-    if (currentDetail && favKey(currentDetail) === favKey(item)) syncDetailFavBtn();
+    requestToggleFav(item, row);   // ★ 把行节点直接传进去，处理中要切它的忙碌态
   });
   return row;
 }
@@ -200,11 +204,19 @@ function handleRetry() {
 
 // ===== 渲染三栏榜单 =====
 // 从数据里取出某个平台这一栏该显示的条目（按序号排序、最多 TOP_N 条）
-function itemsOfPlatform(name) {
-  return (hotData.items || [])
+// ★ Day 12：ignoreFilter=true 时跳过关键词筛选——「空数据」判定和「匹配 x/30」
+//   的分母必须用全量数据，否则一筛选整个页面就被误判成空状态
+function itemsOfPlatform(name, ignoreFilter) {
+  let items = (hotData.items || [])
     .filter((it) => it.platform === name)
     .sort((a, b) => a.rank - b.rank)
     .slice(0, TOP_N);
+  if (!ignoreFilter && filterKeyword) {
+    // Skill 清单：标题包含即命中，不区分大小写（关键词已在 applyFilter 里 trim 过）
+    const kw = filterKeyword.toLowerCase();
+    items = items.filter((it) => it.title.toLowerCase().includes(kw));
+  }
+  return items;
 }
 
 // 查某个平台的状态（数据里没写就默认正常）
@@ -236,6 +248,16 @@ function renderBoard() {
       down.className = "column-down";
       down.textContent = "暂时无法获取，稍后自动重试";
       col.appendChild(down);
+      board.appendChild(col);
+      return;
+    }
+
+    if (filterKeyword && items.length === 0) {
+      // ★ Day 12 筛选无结果态（Skill 三态之二）：绝不空白，文案带关键词（esc 防注入）
+      const none = document.createElement("div");
+      none.className = "column-down column-none";
+      none.textContent = "没有匹配「" + filterKeyword + "」的结果，可清除筛选";
+      col.appendChild(none);
       board.appendChild(col);
       return;
     }
@@ -343,8 +365,95 @@ function openDetail(item) {
   $("detail-overlay").classList.remove("hidden");
 }
 
+/* ---------- ★ Day 12：收藏交互状态机（今天先走前端临时状态，不接数据库）----------
+   按钮共 5 个状态（详情按钮看文字、卡片星标看图标，两处始终同步）：
+     ① 空闲·未收藏：详情「☆ 收藏」描边灰 ｜ 卡片 ☆、白底
+     ② 处理中：详情「⏳ 保存中… / ⏳ 取消中…」半透明禁用 ｜ 卡片星标 … 禁用+呼吸动画
+        —— disabled + favBusy 双保险，处理期间重复点击直接忽略
+     ③ 已收藏：详情「★ 已收藏」红字淡红底 ｜ 卡片 ★、淡红底纹
+     ④ 再点已收藏 → 取消中 → 回到 ①，toast「已取消收藏」
+     ⑤ 失败：数据一点不动，按钮回退到点击前的样子，toast 显示可理解的提示
+   persistFavorites 模拟"写数据库"的 500ms 网络耗时；阶段 2 换成真实 API，其余逻辑不变。 */
+
+let favBusy = false;   // 处理中标记：为 true 时所有收藏点击直接忽略
+
+// 模拟"写数据库"（约 500ms）。地址栏加 ?favfail=1 可强制失败——专门用来测试失败提示（仅开发用）
+function persistFavorites(list) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (new URLSearchParams(location.search).get("favfail") === "1") {
+        reject(new Error("模拟保存失败（?favfail=1 开关）"));
+        return;
+      }
+      resolve(saveFavorites(list));
+    }, FAV_SAVE_DELAY_MS);
+  });
+}
+
+// 收藏/取消收藏的完整流程：状态切换 → 模拟写库 → 成功三处刷新 / 失败回退
+async function requestToggleFav(item, row) {
+  if (favBusy) return;               // 处理期间不可重复点击
+  favBusy = true;
+
+  const willFav = !isFaved(item);    // 本次点击要变成的状态
+  const detailMatches = currentDetail && favKey(currentDetail) === favKey(item);
+
+  // ① 进入"处理中"：卡片星标 + 详情按钮（若正开着同一条）都禁用
+  setStarBusy(row, true);
+  if (detailMatches) setDetailFavBusy(true, willFav);
+
+  try {
+    // 先算好新列表再"写库"，中途失败时原数据一点不动
+    const key = favKey(item);
+    let list = loadFavorites();
+    if (willFav) {
+      list.push({ id: key, platform: item.platform, title: item.title, url: item.url, note: "", saved_at: nowIso() });
+    } else {
+      list = list.filter((f) => f.id !== key);
+    }
+    await persistFavorites(list);    // ★ 今天的前端临时保存（500ms 模拟网络）
+
+    // ② 成功：榜单卡片、详情按钮、顶栏计数三处同步，toast 告诉用户生效了
+    renderBoard();
+    refreshFavBadge();
+    if (detailMatches) syncDetailFavBtn();
+    showToast(willFav ? "★ 已收藏" : "已取消收藏");
+  } catch (e) {
+    // ③ 失败：数据没变；renderBoard / syncDetailFavBtn 会把按钮画回点击前的样子
+    renderBoard();
+    if (detailMatches) syncDetailFavBtn();
+    showToast("收藏保存失败，请稍后再试");
+  } finally {
+    favBusy = false;
+  }
+}
+
+// 处理中：把这条热搜的卡片星标切成忙碌样子（恢复交给 renderBoard 按真实数据重画）
+function setStarBusy(row, busy) {
+  if (!row || !row.isConnected) return;   // 行已被重画就放弃（renderBoard 会按真实数据重画）
+  const star = row.querySelector(".item-star");
+  star.disabled = busy;
+  star.setAttribute("aria-busy", busy ? "true" : "false");
+  if (busy) star.textContent = "…";
+}
+
+// 处理中：详情按钮文字 + 禁用态（恢复时统一走 syncDetailFavBtn 按真实数据重画）
+function setDetailFavBusy(busy, willFav) {
+  const btn = $("detail-fav");
+  btn.disabled = busy;
+  if (busy) {
+    btn.textContent = willFav ? "⏳ 保存中…" : "⏳ 取消中…";
+    btn.classList.remove("faved");
+  } else {
+    syncDetailFavBtn();
+  }
+}
+
 function syncDetailFavBtn() {
-  $("detail-fav").textContent = currentDetail && isFaved(currentDetail) ? "★ 已收藏" : "☆ 收藏";
+  const faved = currentDetail && isFaved(currentDetail);
+  $("detail-fav").textContent = faved ? "★ 已收藏" : "☆ 收藏";
+  $("detail-fav").classList.toggle("faved", !!faved);
+  $("detail-fav").disabled = false;   // 同步即恢复可点（弹层重开、成功、失败回退都经过这里）
 }
 
 function closeDetail() {
@@ -420,11 +529,9 @@ function renderFavorites() {
         '<a class="btn btn-sm" href="' + esc(f.url) + '" target="_blank" rel="noopener">去原文 ↗</a>' +
         '<button class="btn btn-sm" data-act="remove" type="button">取消收藏</button>' +
       "</div>";
-    li.querySelector('[data-act="remove"]').addEventListener("click", () => {
-      saveFavorites(loadFavorites().filter((x) => x.id !== f.id));
-      refreshFavBadge();
-      renderFavorites();
-      renderBoard();
+    const removeBtn = li.querySelector('[data-act="remove"]');
+    removeBtn.addEventListener("click", () => {
+      requestRemoveFav(f, removeBtn);   // ★ Day 12 续：走状态机（处理中防连点、失败回退）
     });
     ul.appendChild(li);
   });
@@ -436,6 +543,48 @@ function openFavorites() {
 }
 
 function closeFavorites() { $("fav-overlay").classList.add("hidden"); }
+
+/* ---------- ★ Day 12 续：抽屉「取消收藏」接入状态机 ----------
+   状态：①空闲「取消收藏」→ ②处理中「⏳ 取消中…」禁用（抽屉内所有移除按钮一起禁用，
+   防并行写库）→ ③成功：该条消失、榜单行回 ☆、计数 -1、toast「已取消收藏」；
+   ④失败：按钮回退、列表与计数不动，toast「收藏保存失败，请稍后再试」。
+   复用 requestToggleFav 的 favBusy 防连点与 persistFavorites（?favfail=1 可测失败）。 */
+async function requestRemoveFav(fav, btn) {
+  if (favBusy) return;               // 处理期间不可重复点击
+  favBusy = true;
+
+  const detailMatches = currentDetail && favKey(currentDetail) === fav.id;
+
+  setDrawerBusy(btn, true);          // ① 进入"处理中"
+  if (detailMatches) setDetailFavBusy(true, false);
+
+  try {
+    await persistFavorites(loadFavorites().filter((f) => f.id !== fav.id));  // 模拟"写库"
+
+    // ② 成功：抽屉、榜单、计数、详情按钮四处同步
+    renderFavorites();
+    renderBoard();
+    refreshFavBadge();
+    if (detailMatches) syncDetailFavBtn();
+    showToast("已取消收藏");
+  } catch (e) {
+    // ③ 失败：数据没动，抽屉不重画，只把按钮画回点击前的样子
+    setDrawerBusy(btn, false);
+    if (detailMatches) syncDetailFavBtn();
+    showToast("收藏保存失败，请稍后再试");
+  } finally {
+    favBusy = false;
+  }
+}
+
+// 处理中：本按钮显示进度，抽屉里所有"取消收藏"一起禁用（防同时删两条互相覆盖）
+function setDrawerBusy(btn, busy) {
+  if (btn) {
+    btn.disabled = busy;
+    btn.textContent = busy ? "⏳ 取消中…" : "取消收藏";
+  }
+  document.querySelectorAll('[data-act="remove"]').forEach((b) => { b.disabled = busy; });
+}
 
 // ===== 数据加载：串起四种页面状态 =====
 function loadData() {
@@ -460,7 +609,7 @@ function loadData() {
       refreshFavBadge();
 
       // ② 空：请求成功，但配置的三个平台一条数据都没有
-      const total = PLATFORM_ORDER.reduce((n, name) => n + itemsOfPlatform(name).length, 0);
+      const total = PLATFORM_ORDER.reduce((n, name) => n + itemsOfPlatform(name, true).length, 0);
       if (total === 0) {
         renderState("empty");
         return;
@@ -478,6 +627,13 @@ function loadData() {
           $("detail-copy").classList.add("copied");
           showToast("链接已复制，可以去粘贴啦", true);
         }
+      }
+
+      // ★ Day 12 预览开关：?filter=关键词 直接进入筛选后的状态（开发截图/测试用）
+      const qf = new URLSearchParams(location.search).get("filter");
+      if (qf) {
+        $("filter-input").value = qf;
+        applyFilter();
       }
     })
     .catch(() => {
@@ -502,13 +658,42 @@ function setNotice(text, warn) {
 // ===== 事件绑定 =====
 $("btn-refresh").addEventListener("click", loadData);   // 手动刷新（PRD F4）
 $("btn-favorites").addEventListener("click", openFavorites);
+
+// ★ Day 12 筛选交互（按 skills/filter-interaction/SKILL.md 实现）
+$("filter-input").addEventListener("input", applyFilter);
+$("filter-clear").addEventListener("click", clearFilter);
+
+// 筛选入口：读输入框 → 更新全局关键词 → 只重画榜单和计数（不动数据源）
+function applyFilter() {
+  filterKeyword = $("filter-input").value.trim();   // Skill 清单：首尾空格要 trim
+  $("filter-clear").disabled = filterKeyword === ""; // 无关键词时禁用但看得见
+  if (hotData) renderBoard();
+  updateFilterCount();
+}
+
+// 匹配计数（aria-live，读屏可播报）：分母用全量、分子用筛选后
+function updateFilterCount() {
+  const el = $("filter-count");
+  if (!hotData || !filterKeyword) { el.textContent = ""; return; }
+  const total = PLATFORM_ORDER.reduce((n, name) => n + itemsOfPlatform(name, true).length, 0);
+  const matched = PLATFORM_ORDER.reduce((n, name) => n + itemsOfPlatform(name).length, 0);
+  el.textContent = "匹配 " + matched + "/" + total + " 条";
+}
+
+// 清空恢复（Skill 三态之三）：恢复列表 + 禁用清除按钮 + 焦点回输入框
+function clearFilter() {
+  const input = $("filter-input");
+  input.value = "";
+  filterKeyword = "";
+  $("filter-clear").disabled = true;
+  if (hotData) renderBoard();
+  updateFilterCount();
+  input.focus();
+}
 $("detail-close").addEventListener("click", closeDetail);
 $("fav-close").addEventListener("click", closeFavorites);
 $("detail-fav").addEventListener("click", () => {
-  if (!currentDetail) return;
-  toggleFav(currentDetail);
-  syncDetailFavBtn();
-  renderBoard();
+  if (currentDetail) requestToggleFav(currentDetail);   // ★ Day 12：走状态机（处理中防连点、失败回退）
 });
 $("detail-note").addEventListener("click", openNoteEditor);
 $("detail-copy").addEventListener("click", copyDetailLink);   // ★ Day 11：复制链接

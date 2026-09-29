@@ -95,6 +95,22 @@ body {
 /* ★ Day 11：复制成功的按钮态——文字/描边变绿，反馈一眼可感知 */
 .btn.copied { border-color: var(--ok); color: var(--ok); font-weight: 700; }
 
+/* ★ Day 12：收藏按钮的"已收藏"态——红字 + 淡红底 + 描边变红，和卡片行的收藏底纹同一个语义色
+   （文字用 --brand-ink，淡红底上实测 5.45:1，DR-1 达标） */
+.btn.faved { border-color: var(--brand); color: var(--brand-ink); background: var(--brand-soft); font-weight: 700; }
+.btn.faved:hover { background: var(--brand-soft-hover); }
+.btn.faved:active { background: var(--brand-soft-hover); }
+
+/* ★ Day 12：处理中（保存中/取消中）——半透明 + 禁用手势；
+   重复点击由 CSS 禁用 + JS 的 favBusy 双保险拦截 */
+.btn:disabled, .item-star:disabled { opacity: 0.55; cursor: progress; }
+.btn:disabled:hover, .btn:disabled:active { background: var(--card); }
+.btn-primary:disabled:hover { background: var(--brand); }
+.item-star:disabled:hover { background: none; color: #7d8694; }
+/* 星标忙碌时轻轻呼吸，让"正在保存"也可感知；?prefers-reduced-motion 用户不受影响（无位移，纯透明度） */
+.item-star[aria-busy="true"] { animation: star-busy 0.9s ease infinite; }
+@keyframes star-busy { 50% { opacity: 0.25; } }
+
 /* ★ Day 11：轻提示（toast）——底部浮出，淡入 + 上滑动画，2.4 秒自动消失 */
 .toast {
   position: fixed; left: 50%; bottom: 48px; z-index: 90;
@@ -127,6 +143,31 @@ body {
   border-bottom: 1px dashed var(--line); background: var(--card);
 }
 .notice-warn { color: #ad6800; background: #fffaf0; }
+
+/* ---------- ③ 筛选条（Day 12，按 skills/filter-interaction/SKILL.md 实现）---------- */
+.filter-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2);
+  max-width: var(--page-max); margin: 0 auto; width: 100%;
+  padding: var(--sp-2) var(--sp-4) 0;
+}
+.filter-label { font-size: var(--fs-base); font-weight: 700; white-space: nowrap; }
+.filter-input {
+  min-height: 40px;                        /* 点击区 ≥40px（DR-7）*/
+  flex: 1 1 200px; min-width: 0;
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-base); font-family: inherit;
+  border: 1px solid var(--line-strong);    /* 控件边界 3.27:1（DR-2）*/
+  border-radius: var(--radius-sm);
+  background: var(--card); color: var(--ink);
+}
+.filter-input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; } /* DR-3 */
+.filter-input::placeholder { color: var(--ink-2); }
+.filter-count {
+  font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap;
+  font-variant-numeric: tabular-nums;      /* DR-12 等宽数字 */
+}
+/* 筛选无结果与"平台降级"共用 column-down 的留白布局，语义不同 */
+.column-none { color: var(--ink-2); }
 
 /* ---------- ③ 榜单区：桌面三栏并排 ---------- */
 .board {
