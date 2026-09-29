@@ -48,6 +48,7 @@
       <div class="modal-actions">
         <button class="btn" id="detail-fav" type="button">☆ 收藏</button>
         <button class="btn" id="detail-note" type="button">✎ 写备注</button>
+        <button class="btn" id="detail-copy" type="button" aria-live="polite">⧉ 复制链接</button>
         <a class="btn btn-primary" id="detail-link" target="_blank" rel="noopener">去原平台查看 ↗</a>
       </div>
       <div class="note-area hidden" id="note-area">
@@ -72,6 +73,9 @@
       <ul class="fav-list" id="fav-list"></ul>
     </aside>
   </div>
+
+  <!-- 轻提示（toast）：复制成功等即时反馈，2.5 秒自动消失 -->
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
 </body>

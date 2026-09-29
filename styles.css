@@ -19,6 +19,7 @@
   --brand-ink: #b9271d;      /* ★ Day10：红字配淡红底时用这个更深的红（#d93025 只有 4.18:1，DR-1 要 4.5） */
   --brand-soft: #fdeceb;
   --brand-soft-hover: #f9dcd9;
+  --ok: #188038;             /* ★ Day 11：成功反馈色（对比度 5.13:1，白底达标 DR-1） */
   --radius: 12px;            /* 卡片级圆角，全站统一（DR-8） */
   --radius-sm: 8px;          /* 行/按钮级圆角 */
 
@@ -56,20 +57,23 @@ body {
 }
 
 /* ---------- ① 顶栏 ---------- */
+/* ★ 防遮挡加固：真机大字体/缩放会把按钮撑宽，允许顶栏整体换行、
+   按钮区自身也能换行，行距用 --sp-2 保证换行后互不接触 */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; gap: var(--sp-3);
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
   background: var(--card);
   border-bottom: 1px solid var(--line);
 }
-.topbar-main { display: flex; align-items: baseline; gap: var(--sp-2); min-width: 0; }
+.topbar-main { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--sp-2); min-width: 0; }
 .topbar-title { font-size: var(--fs-2xl); letter-spacing: 1px; white-space: nowrap; }
 .topbar-time {
   font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
+  min-width: 0; flex: 0 1 auto;   /* ★ 空间不足时先收缩显示省略号，而不是把别的元素挤出顶栏 */
 }
-.topbar-actions { margin-left: auto; display: flex; gap: var(--sp-2); flex: none; }
+.topbar-actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--sp-2); flex: none; max-width: 100%; }
 
 /* ---------- 按钮 ---------- */
 /* DR-2：描边换成 --line-strong（3.27:1），按钮才"看得出是按钮"；
@@ -88,6 +92,23 @@ body {
 .btn-primary:active { background: var(--brand); } /* 主按钮按压缩回品牌红，和 hover 的深红区分出"按住了" */
 .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 .btn-primary:hover { background: var(--brand-ink); } /* ★ Day10：硬编码 #b9271d 收进令牌 */
+/* ★ Day 11：复制成功的按钮态——文字/描边变绿，反馈一眼可感知 */
+.btn.copied { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+
+/* ★ Day 11：轻提示（toast）——底部浮出，淡入 + 上滑动画，2.4 秒自动消失 */
+.toast {
+  position: fixed; left: 50%; bottom: 48px; z-index: 90;
+  transform: translateX(-50%) translateY(8px);
+  max-width: min(86vw, 420px);
+  padding: 10px 18px;
+  background: #262b33; color: #fff;
+  font-size: var(--fs-base); line-height: 1.5;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(15, 18, 22, 0.25);
+  opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 /* 次级小按钮（抽屉/弹层内）：★ Day10 高度 32→40px，DR-7 判定线是全站统一的，
    原先"放宽到 32px"的豁免与规则矛盾——而且这几个按钮正是手机端最常点的（去原文/取消收藏/保存备注） */
 .btn-sm { padding: 0 var(--sp-3); min-height: 40px; font-size: var(--fs-xs); }
@@ -302,9 +323,9 @@ body {
   :root { --cols: 1; --gap: var(--sp-3); }
 
   .topbar { flex-wrap: wrap; padding: var(--sp-3) var(--sp-3); gap: var(--sp-2); }
-  .topbar-main { width: 100%; }
-  .topbar-actions { margin-left: 0; width: 100%; gap: var(--sp-2); }
-  .topbar-actions .btn { flex: 1; min-width: 0; }
+  .topbar-main { width: 100%; flex-wrap: wrap; }
+  .topbar-actions { margin-left: 0; width: 100%; gap: var(--sp-2); flex-wrap: wrap; }
+  .topbar-actions .btn { flex: 1 1 auto; min-width: 0; }   /* 大字体下放不下就各自换行，不溢出不遮挡 */
 
   .board { padding: var(--sp-3); }
 

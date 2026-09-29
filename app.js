@@ -250,6 +250,66 @@ function renderBoard() {
 
 // ===== 详情弹层（PRD F2）=====
 let detailScrollY = 0;    // ★ Day 10：详情弹层打开前的背景滚动位置（关闭时恢复）
+let copyTimer = null;     // ★ Day 11：「已复制」状态自动恢复的计时器（连续点击时先清旧的）
+
+/* ---------- ★ Day 11：复制链接 + 可感知反馈 ----------
+   乐观反馈：点击【瞬间】按钮变「✓ 已复制」（绿色）+ 底部 toast 弹出——不等剪贴板结果，
+   因为反馈必须 0 延迟才可感知；剪贴板真正失败时再回退按钮并提示手动复制。
+   连续快速点击不报错：每次点击先 clearTimeout 取消上一次恢复，再重新计时。 */
+function copyDetailLink() {
+  const btn = $("detail-copy");
+  const url = currentDetail ? currentDetail.url : "";
+  if (!url) return;
+
+  // ① 即时反馈（点击后 0ms）：变绿 + toast
+  btn.textContent = "✓ 已复制";
+  btn.classList.add("copied");
+  showToast("链接已复制，可以去粘贴啦");
+  if (copyTimer) clearTimeout(copyTimer);
+  copyTimer = setTimeout(resetCopyBtn, 2500);
+
+  // ② 真正执行复制；失败时回退反馈并提示手动方案
+  const fail = () => {
+    btn.textContent = "⧉ 复制链接";
+    btn.classList.remove("copied");
+    showToast("复制失败，请长按「去原平台查看」手动复制");
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).catch(fail);
+  } else {
+    // 兼容兜底：老浏览器没有 clipboard API 时用隐藏输入框 + execCommand
+    const tmp = document.createElement("textarea");
+    tmp.value = url;
+    tmp.style.position = "fixed";
+    tmp.style.opacity = "0";
+    document.body.appendChild(tmp);
+    tmp.select();
+    try { if (!document.execCommand("copy")) fail(); } catch (e) { fail(); }
+    document.body.removeChild(tmp);
+  }
+}
+
+function resetCopyBtn() {
+  $("detail-copy").textContent = "⧉ 复制链接";
+  $("detail-copy").classList.remove("copied");
+}
+
+function showToast(text, keep) {
+  const t = $("toast");
+  t.textContent = text;
+  t.classList.remove("hidden");
+  // 强制重排后再加动画类，保证连续触发时动画能重新播放
+  void t.offsetWidth;
+  t.classList.add("show");
+  if (showToast._timer) clearTimeout(showToast._timer);
+  if (!keep) {
+    showToast._timer = setTimeout(() => {
+      t.classList.remove("show");
+      t.classList.add("hidden");
+    }, 2400);
+  }   // keep=true 时不自动隐藏（仅供 ?copied=1 开发预览冻结画面用）
+}
 
 function openDetail(item) {
   currentDetail = item;
@@ -259,6 +319,7 @@ function openDetail(item) {
   $("detail-time").textContent = item.time ? "上榜 " + item.time : "";
   $("detail-title").textContent = item.title;
   $("detail-link").href = item.url;
+  resetCopyBtn();   // ★ Day 11：换一条打开时，复制按钮恢复初始态（防止残留上一次的"已复制"）
 
   const fav = loadFavorites().find((f) => f.id === favKey(item));
   syncDetailFavBtn();
@@ -411,6 +472,12 @@ function loadData() {
       // 开发调试开关：?detail=open 自动打开第一条的详情弹层（仅预览用）
       if (new URLSearchParams(location.search).get("detail") === "open") {
         openDetail(hotData.items[0]);
+        // ★ Day 11 预览：?copied=1 冻结呈现"已复制"反馈态（仅开发截图/测试用，不启动计时器）
+        if (new URLSearchParams(location.search).get("copied") === "1") {
+          $("detail-copy").textContent = "✓ 已复制";
+          $("detail-copy").classList.add("copied");
+          showToast("链接已复制，可以去粘贴啦", true);
+        }
       }
     })
     .catch(() => {
@@ -444,6 +511,7 @@ $("detail-fav").addEventListener("click", () => {
   renderBoard();
 });
 $("detail-note").addEventListener("click", openNoteEditor);
+$("detail-copy").addEventListener("click", copyDetailLink);   // ★ Day 11：复制链接
 $("note-save").addEventListener("click", saveNote);
 $("note-input").addEventListener("input", (e) => {
   $("note-count").textContent = e.target.value.length + "/50";
