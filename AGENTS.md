@@ -274,3 +274,34 @@
 - **复验**：node 连续 6 次请求全 200/7138B/3–31ms；真实 Edge 打开正常（`打卡/状态截图/Day14-1-真人测试-页面现场.png`，窗口里还能看到测试者此前自己开的 127.0.0.1 标签页）；测试者确认「欧克了」
 - **明确没做**：不换数据集（等云函数）、不改 placeholder 与隐藏数据（产品取舍）、不加启动脚本（README 已够）——均记入测试记录 ③
 - 遗留观察（低优先级）：placeholder「试试输入：中秋」只命中 1/30，易让测试者误判搜索坏了；百度/知乎 20 条在数据里但不展示
+
+## 二十九、Day 15 主任务：部署 /api/health 与前端 mock 版 + 接口契约（2026-10-09）
+
+> 顺序：① 注册开通 CloudBase ② /api/health 云函数部署 ③ 前端 mock 版部署 ④ 接口契约。
+> 不做：真实业务接口、数据库建表、跨域配置（Day 16–20）。
+
+- **①注册开通 = Day 7 已完成**（环境 `acknowledge-d9gnqrpy89f1f7d21`，体验版，到期 **2027-03-22 23:59:59**，状态 Normal）；本日核实 CLI 登录态仍有效（`~/.cloudbase/auth.json`，`tcb env list` 实测可查），额度消耗合计 0.00
+- **②/ api/health 部署（本日最大踩坑，记录在案）**：
+  - 现象：`tcb fn deploy --httpFn --path /api/health`（**Web 函数**）部署成功且 CLI 打印了公网链接，但访问恒报 **400 `FUNCTIONS_PARAM_INVALID: FunctionType parameter is invalid`**；重建函数、删除重来均复现（不是脏数据）
+  - 另一个坑：`tcb routes add` 对环境默认域名报「system internal domain, manual creation or modification is not supported」——默认域名不允许手工加路由
+  - **解法**：改用**事件型云函数**（`exports.main` 返回 `{statusCode, headers, body}` 集成响应）+ `tcb fn deploy health -e <env> --path /api/health`（**不带 `--httpFn`**）→ 公网直接 **HTTP 200 + JSON** ✅
+  - 结论一句话：默认域名 `*.service.tcloudbase.com` 的 HTTP 访问服务认**事件型函数**，Web 函数（要 `scf_bootstrap` 自起端口）不是这条路
+  - 最终产物：`cloudfunctions/health/{index.js, package.json}`（函数名 `health`，无依赖，超时 5s / 256MB）；中间试验版 health-web 已删除
+- **③前端 mock 版部署**：`node scripts/sync-dist.js` → `tcb hosting deploy dist -e <env> --verify`，4 文件上传并校验通过；公网 `https://acknowledge-d9gnqrpy89f1f7d21-1493626656.tcloudbaseapp.com/` 页面与 3 个资源全部 200、内容为最新版（Day 13 三视图）
+- **④接口契约**：新增 `api-contract.md`（仓库根目录）——统一响应外壳 `{code, message, data}`、业务码表（业务失败也返回 HTTP 200，靠 `code` 区分）、`GET /api/health` 完整规格 + 实测示例、`GET /api/hot` 占位（Day 16–20）、跨域注意事项（前端域与接口域不同源，CORS 留待后续）
+- **交付截图（打卡/状态截图/）**：`Day15-1-云函数公网JSON.png`（地址栏 + JSON）、`Day15-2-前端公网页面.png`（地址栏 + 页面）、`Day15-3-环境信息.png`（环境 ID / 到期日期 / 额度消耗）
+  - ⚠️ 第 3 张为 **CLI 实取数据**的整理快照（`tcb env list` / `tcb env usage`），**不是控制台界面**；控制台 UI 截图需账号登录，等用户补拍
+  - 截图脚本新增 `--click`：CloudBase **测试域名**首次在浏览器打开会弹「页面访问提示」风险确认页（腾讯云对未审核域名的统一提示），需点「确定访问」才见内容——给同伴看链接时要提前说明
+- **余力加练（云函数代码逐段解释）**：见本文件下方附录，也可让 AI 现场再讲一遍
+- 提交：cloudbaserc.json（functions 配置）+ cloudfunctions/health/* + api-contract.md + AGENTS.md + README.md，commit 标题「Day 15｜…」
+
+### 附：`cloudfunctions/health/index.js` 逐段解释（余力加练）
+
+| 段 | 代码 | 作用 |
+| --- | --- | --- |
+| 1 | `const SERVICE_NAME / SERVICE_VERSION` | 常量集中定义：服务标识与版本号写在一处，改版本只动这里 |
+| 2 | `exports.main = async (event, context) => {...}` | 云函数入口。`event` 是触发时传入的数据（HTTP 访问时是整个请求），`context` 含运行环境信息（如 `namespace` = 环境 ID） |
+| 3 | `const payload = { code, message, data }` | 组装统一响应外壳。`data.status` 固定 `healthy`；`env` 优先取 `context.namespace`，取不到降级 `unknown`，**不抛错**（探针绝不能自己先挂） |
+| 4 | `uptime: Math.round(process.uptime())` | 实例已运行秒数，用来判断是不是刚冷启动的实例 |
+| 5 | `time: new Date().toISOString()` | UTC ISO 8601 时间，服务端不做本地时区拼接（由前端按用户时区展示） |
+| 6 | `return { statusCode: 200, headers, body: JSON.stringify(payload) }` | 「集成响应」格式：由函数自己决定状态码与响应头，HTTP 访问服务原样转给调用方 |

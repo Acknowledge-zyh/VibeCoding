@@ -3,5 +3,13 @@
   "_说明": "CloudBase 部署配置模板。envId 换成你控制台里的真实环境 ID（形如 cloud1-xxxxx）后即可用 CLI 部署。换环境只改这一处（TECH_DESIGN 11.5）。",
   "envId": "acknowledge-d9gnqrpy89f1f7d21",
   "functionRoot": "./cloudfunctions",
-  "region": "ap-shanghai"
+  "region": "ap-shanghai",
+  "functions": [
+    {
+      "name": "health",
+      "timeout": 5,
+      "memorySize": 256,
+      "description": "/api/health 健康检查（Day 15，Web 函数）：监听端口返回统一 JSON，由 HTTP 访问服务映射为公网 /api/health"
+    }
+  ]
 }

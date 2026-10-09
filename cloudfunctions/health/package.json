@@ -1,0 +1,8 @@
+{
+  "name": "health",
+  "version": "0.1.0",
+  "description": "/api/health 健康检查云函数（Web 类型）：监听端口返回统一 JSON，被 HTTP 访问服务映射为公网 /api/health",
+  "main": "server.js",
+  "private": true,
+  "license": "UNLICENSED"
+}

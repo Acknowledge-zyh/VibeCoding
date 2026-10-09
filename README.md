@@ -75,30 +75,32 @@ npx serve .
 
 登录、支付、复杂缓存、数据库、React/Vite 框架——均按 PRD 3.2 与 TECH_DESIGN 第 14 章推迟。
 
-## 部署到 CloudBase 静态托管（第 2 步，路线已定：方案 B）
+## 部署到 CloudBase（Day 7 起已上线，环境：`acknowledge-d9gnqrpy89f1f7d21`）
 
 **每次改完代码的固定流程**（先提交、再部署，TECH_DESIGN 10.5）：
 
 ```
-node scripts/sync-dist.js     # ① 把最新静态文件同步进 dist/
-git add ... && git commit ... # ② 提交（标题 Day X｜…）
-git push                      # ③ 推送
-# ④ 部署 dist/ → 线上验证刚改的行为
+node scripts/sync-dist.js                        # ① 把最新静态文件同步进 dist/
+git add ... && git commit ...                    # ② 提交（标题 Day X｜…）
+git push                                         # ③ 推送
+# ④ 部署（见下）→ 线上验证刚改的行为
 ```
 
-**首次部署（等你开通环境后做）**
+**部署命令（实测可用，CloudBase CLI 已登录）**
 
-1. 开通 CloudBase 环境（见下方「你的动作」），记下**环境 ID**（形如 `cloud1-xxxxx`）
-2. 把环境 ID 填进 `cloudbaserc.json` 的 `envId`（换环境只改这一处）
-3. 部署二选一：
-   - **CLI**：`npx tcb login`（浏览器授权）→ `npx tcb hosting deploy dist -e 你的环境ID`
-   - **控制台**：CloudBase 控制台 → 静态网站托管 → 文件管理 → 把 `dist/` 里的内容上传
-4. 浏览器打开默认域名 → 应看到四列热搜页；手机再开一次 → 单列无横滚
-5. 关掉电脑、换台设备再开一次 → 页面还在（B12 前置验证）
+```
+tcb hosting deploy dist -e acknowledge-d9gnqrpy89f1f7d21 --verify   # 前端静态托管
+tcb fn deploy health -e acknowledge-d9gnqrpy89f1f7d21 --path /api/health   # /api/health 云函数
+```
 
-**你的动作（一次性的账号准备，我无法代办）**
+- 线上前端：`https://acknowledge-d9gnqrpy89f1f7d21-1493626656.tcloudbaseapp.com/`
+- 线上健康检查：`https://acknowledge-d9gnqrpy89f1f7d21.service.tcloudbase.com/api/health`（应返回 `{"code":0,...}`）
+- 接口契约见 `api-contract.md`；环境信息（额度/到期）用 `tcb env list` / `tcb env usage` 查看
 
-- 登录腾讯云 https://cloud.tencent.com → 完成实名认证
-- 开通云开发 CloudBase：https://tcb.cloud.tencent.com/ → 创建环境
-- ⚠️ 创建环境时**数据库类型选 PostgreSQL**（本期不用，但类型事后不可改，为二期占位——TECH_DESIGN 3.3 取舍二）
-- 把环境 ID 发我，我带你走完部署
+**两个实测踩过的坑（别再踩）**
+
+1. `/api/health` 必须用**事件型云函数** + `--path`（**不要**加 `--httpFn`）。
+   `--httpFn` 是 Web 函数（要 `scf_bootstrap` 自起端口），它建的访问路径会报
+   `400 FUNCTIONS_PARAM_INVALID: FunctionType parameter is invalid`。
+2. 环境默认域名不允许手工加路由（`tcb routes add` 会报 system internal domain）；
+   要挂路径就用 `fn deploy --path`，要挂自定义域名才走 `routes`。
