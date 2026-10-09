@@ -320,3 +320,33 @@
 | 2 | `exports.main = async () => {...}` | 云函数入口。事件型函数：HTTP 访问服务把整个请求作为 `event` 传入（本探针刻意不解析请求） |
 | 3 | `const payload = { ok, service, time }` | 按契约组装响应体：`ok:true` 表示服务正常；`time` 用 UTC ISO 8601，服务端不做本地时区拼接（由前端按用户时区展示） |
 | 4 | `return { statusCode: 200, headers, body: JSON.stringify(payload) }` | 「集成响应」格式：由函数自己决定状态码与响应头，HTTP 访问服务原样转给调用方 |
+
+---
+
+## 三十一、案例数据模型：trends / favorites 演示表建表 + 种子 + select 验证（2026-10-09 傍晚）
+
+> 需求：为「今日热搜」案例设计数据模型并生成**可重复执行**的 SQL——
+> `trends`（id/标题/热度/来源平台/排名/日期/抓取时间）、`favorites`（id/trends_id 外键/备注/创建时间），
+> schema.sql 含主键、外键、`(来源平台, 标题, 日期)` 唯一索引；seed.sql 先 DROP 再 CREATE 再 INSERT ≥5 条；
+> 给出控制台执行步骤与 select 验证方法；逐列说明类型选型。**案例专用，不代表生产设计**（任务原文明确）。
+
+- **表设计与关联**：`favorites.trends_id → trends.id`（外键，`ON DELETE CASCADE`）——收藏存的是引用不是标题副本，
+  天然无双份数据不一致问题；唯一索引含「日期」是因为热搜是**每日快照**，同标题连着两天上榜合法，只有同一天才去重
+- **新增文件**：`db/schema.sql`（建表 + 逐列 COMMENT + 4 个索引 + 末尾「字段类型选型说明」）、
+  `db/seed.sql`（DROP→CREATE→INSERT 自包含：18 条热搜〔今天 15=微博/抖音/B站 各 5，昨天 3 用来证明唯一索引含日期〕+ 6 条收藏，
+  收藏用 `(values …) join trends` 按业务坐标换代理键，不硬编码自增 id）、`db/verify.sql`（6 个 `@panel`：字段/约束/索引/两表数据/自检）、
+  `scripts/lib/tcb.js` + `db-apply.js` + `db-snapshot.js`（SQL 不经 shell 拼串直送 CLI；逐条执行 verify.sql 并生成取证页）
+- **实测（环境 acknowledge-d9gnqrpy89f1f7d21，PostgreSQL 17）**：schema/seed 各重复执行均无报错，
+  三次执行后行数恒为 **trends 18（今天 15+昨天 3）／favorites 6**；自检 7 项全对（平台分布 5/5/5、孤儿收藏 0、无备注收藏 1）
+- **负向验证（约束真实生效）**：重复行 → `23505 uq_trends_platform_title_date`；`trends_id=999999` → `23503 外键`；
+  `rank=0` → `23514 CHECK (rank >= 1)`；三条脏数据均未入库
+- **控制台路径**（任务要求给出）：tcb.cloud.tencent.com → 环境 → 数据库 → SQL 执行入口粘贴执行（CLI 为实测等效方式），
+  步骤与验证 SQL 见 README 新增「H. 数据库」节
+- **文档**：README +H 节（含「seed 会清表，真实项目学六级项目 seed- 前缀 + UPSERT」的对比提醒）；
+  TECH_DESIGN 5.5 加更新说明（案例版规范化 vs 本节二期草案的冗余设计，取舍留到接真实数据源再定）
+- **交付截图（打卡/状态截图/，gitignore 不入库）**：`Day16-热搜-trends表数据.png`（15 行）、
+  `Day16-热搜-favorites表数据.png`（6 行，join 出原标题）、`Day16-热搜-主键外键约束.png`（含 ON DELETE CASCADE 定义）、
+  `Day16-热搜-唯一索引.png`（`uq_trends_platform_title_date` 的 CREATE UNIQUE INDEX 定义）；
+  另有 `打卡/db-snapshot.html` 取证页（6 面板可切）
+- **同环境共存说明**：public 架构现有两套表——六级项目 3 张 + 本案例 2 张，表名不冲突；
+  `db-snapshot.js` 的约束/索引查询都按 `table_name in ('trends','favorites')` 过滤，不会把六级表混进来

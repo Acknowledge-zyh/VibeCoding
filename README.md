@@ -157,3 +157,58 @@ tcb fn deploy health -e acknowledge-d9gnqrpy89f1f7d21 --path /api/health   # ⑤
 ### G. 接口契约
 
 所有接口（已实现 1 个 + 占位 6 个）的路径、方法、参数、响应形状、错误返回，统一见 `api-contract.md`。
+
+### H. 数据库（案例演示表：trends / favorites）
+
+> ⚠️ 这两张表是**案例演示表**，只用于跑通「建表 → 灌种子 → select 验证」链路，不是生产设计。
+> 同一环境里另有六级单词复习项目的三张表（`words` / `learn_records` / `review_records`），互不影响。
+
+**两张表存什么、靠什么关联**
+
+| 表 | 存什么 | 关联 |
+| --- | --- | --- |
+| `trends` | 热搜条目：某平台某天榜单上的一条（标题、热度、排名、抓取时间），**每日一份快照** | 被引用方（`id`） |
+| `favorites` | 收藏：把哪条热搜收进了列表、备注是什么 | `trends_id → trends.id`（外键） |
+
+唯一索引建在 `trends (platform, title, trend_date)` 上：同平台同一天的同一条只允许一行；
+「日期」必须进索引，因为同一条新闻连着两天上榜是正常的，只有同一天才需要去重。
+
+**执行步骤**
+
+- 控制台方式：`tcb.cloud.tencent.com` → 进入环境 `acknowledge-d9gnqrpy89f1f7d21` →
+  左侧「数据库」→ PostgreSQL 的 SQL 执行入口（不同版本叫「SQL 编辑器 / SQL 运行 / 命令行」）→
+  把 `db/schema.sql` 的内容整段粘贴执行 → 再把 `db/seed.sql` 粘贴执行。
+- 命令行方式（本仓库实测用的就是它，SQL 原样送达不经 shell 转义）：
+
+```
+node scripts/db-apply.js db/schema.sql    # 建表（全部 if not exists，可重复执行）
+node scripts/db-apply.js db/seed.sql      # 灌种子（先 DROP 再 CREATE 再 INSERT）
+```
+
+**验证方法（select 查看插入的行）**
+
+```
+node scripts/db-snapshot.js        # 逐条执行 db/verify.sql：打印结果 + 生成 打卡/db-snapshot.html 取证页
+```
+
+或直接对库执行（控制台/CLI 均可）：
+
+```sql
+select id, title, heat, platform, "rank", trend_date, fetched_at
+from trends where trend_date = current_date order by platform, "rank";   -- 预期 15 行
+
+select f.id, f.trends_id, t.platform, t.title, f.note, f.created_at
+from favorites f join trends t on t.id = f.trends_id
+order by f.created_at desc;                                              -- 预期 6 行
+```
+
+实测结果（2026-10-09）：`trends` 18 行（今天 15 + 昨天 3）、`favorites` 6 行；
+重复执行 `seed.sql` 三次结果逐行一致；故意插入重复行 / 不存在的 `trends_id` / `rank=0`
+分别被唯一索引（23505）、外键（23503）、CHECK（23514）挡下。
+
+**⚠️ `seed.sql` 会清空这两张表**：它按案例要求「先 DROP 再 CREATE 再 INSERT」，跑一遍就重置一遍，
+只适合演示。真实项目的种子脚本应该学六级单词复习项目的写法——只删自己插入的那批（id 带 `seed-` 前缀）
+加 UPSERT，不动别人的数据。
+
+字段类型为什么这么选（text / bigint / smallint / date / timestamptz / varchar(50)…）
+逐列写在 `db/schema.sql` 末尾的「字段类型选型说明」里。

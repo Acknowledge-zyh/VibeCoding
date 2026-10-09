@@ -348,6 +348,13 @@ VibeCoding/                         ← 仓库根目录，也是 Git 仓库
 
 ### 5.5 二期数据库表（CloudBase PostgreSQL，本期不建表）
 
+> **2026-10-09 更新**：课程案例版的两张演示表（`trends` / `favorites`，按
+> 「`favorites.trends_id → trends.id`」的规范化设计 + `(platform, title, trend_date)` 唯一索引）
+> 已建好并入库，见 **`db/schema.sql`**（含逐列的类型选型说明）、`db/seed.sql`（种子）、`db/verify.sql`（验证）。
+> 它与本节草案的差异：本节把 platform/title/url 冗余进 favorites（收藏列表不用 join 就能渲染、
+> 源条目被清了收藏还在），案例版只存引用（不复制标题，无双份数据不一致问题）。
+> 二期选哪种，等接上真实数据源、看清"热搜快照要保留几天"再定。
+
 ```sql
 -- 二期启用；本期不执行
 create table if not exists favorites (
