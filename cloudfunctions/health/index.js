@@ -1,31 +1,26 @@
-// /api/health —— 健康检查云函数（Day 15）
+// /api/health —— 健康检查云函数（今日热搜 / hot-search-demo）
 //
 // 类型：CloudBase 事件型云函数（exports.main）。
 // 通过「HTTP 访问服务」把路径 /api/health 映射到这个函数，返回「集成响应」格式
 // （自己决定状态码与响应头），详见 api-contract.md 第 2 节。
 //
-// 约定：
-//   - 永远返回 HTTP 200 + 同一套 JSON 外壳 { code, message, data }
-//   - 不做任何业务逻辑、不读写数据库、不依赖外部服务（所以它足够快、也足够可信）
-//   - 时间用 UTC ISO 8601，避免服务端时区影响判读
+// 边界（刻意保持最小）：
+//   - 只实现 GET /api/health，不连数据库、不写任何业务逻辑
+//   - 永远返回 HTTP 200 + 同一份 JSON：{ ok, service, time }
+//   - 时间用 UTC ISO 8601，交给前端按用户时区展示
+//
+// 部署（实测可用）：
+//   tcb fn deploy health -e <envId> --path /api/health --runtime Nodejs18.15 --force
+//   ⚠️ 不要加 --httpFn：那是 Web 函数，建的访问路径会报
+//     400 FUNCTIONS_PARAM_INVALID: FunctionType parameter is invalid
 
-const SERVICE_NAME = "hot-search-api";
-const SERVICE_VERSION = "0.1.0";
+const SERVICE_NAME = "hot-search-demo";
 
-exports.main = async (event = {}, context = {}) => {
+exports.main = async () => {
   const payload = {
-    code: 0,
-    message: "ok",
-    data: {
-      status: "healthy",
-      service: SERVICE_NAME,
-      version: SERVICE_VERSION,
-      // CloudBase 运行时会注入环境标识，取不到时降级为 unknown（不抛错）
-      env: (context && context.namespace) || process.env.TENCENTCLOUD_ENV || "unknown",
-      // 运行时长（秒）：冷启动后可用来判断是不是刚扩容出来的实例
-      uptime: Math.round(process.uptime()),
-      time: new Date().toISOString(),
-    },
+    ok: true,
+    service: SERVICE_NAME,
+    time: new Date().toISOString(),
   };
 
   // HTTP 访问服务「集成响应」格式

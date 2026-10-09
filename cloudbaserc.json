@@ -9,7 +9,7 @@
       "name": "health",
       "timeout": 5,
       "memorySize": 256,
-      "description": "/api/health 健康检查（Day 15，Web 函数）：监听端口返回统一 JSON，由 HTTP 访问服务映射为公网 /api/health"
+      "description": "/api/health 健康检查（事件型云函数，集成响应）：永远返回 { ok, service, time }，由 HTTP 访问服务映射为公网 /api/health"
     }
   ]
 }

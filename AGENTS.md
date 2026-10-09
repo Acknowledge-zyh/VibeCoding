@@ -295,13 +295,28 @@
 - **余力加练（云函数代码逐段解释）**：见本文件下方附录，也可让 AI 现场再讲一遍
 - 提交：cloudbaserc.json（functions 配置）+ cloudfunctions/health/* + api-contract.md + AGENTS.md + README.md，commit 标题「Day 15｜…」
 
-### 附：`cloudfunctions/health/index.js` 逐段解释（余力加练）
+## 三十、/api/health 契约改版：扁平 `{ ok, service, time }` + 全量接口占位（2026-10-09）
+
+> 需求：创建第一个 CloudBase 云函数（只实现 GET /api/health，不连数据库、无业务逻辑），返回
+> `{ ok: true, service: "hot-search-demo", time: "<服务器时间>" }`；给出前后端从创建到公网访问的完整步骤与验证方法；
+> 生成 api-contract.md，登记全部后续接口占位。不做：跨域配置、接口对接、定时同步。
+
+- **与 Day 15 现状的三处差异（如实记录）**：
+  1. `/api/health` 并非首次创建——Day 15 已部署（旧形状 `{code,message,data:{status,service:"hot-search-api",version,env,uptime}}`）；本日按新形状改写并重新部署，函数名不变
+  2. 「前端 React 项目」与实际不符：本项目是原生 HTML/CSS/JS（README「本期明确不做 React/Vite」），按现有 mock 版部署，**未**新建 React 工程
+  3. 响应外壳从 `{code,message,data}` 统一改为 **`ok` 式**：成功 `ok:true` + 顶层业务字段；失败 `ok:false` + `error{code,message}`，错误改用真实 HTTP 状态码（400/404/500/502），契约全文同步改版
+- **实现**：cloudfunctions/health/index.js 精简为只返回三字段；package.json 修正 `main`（原指向已删除的 server.js）与描述（原误写「Web 类型」）；cloudbaserc.json 描述同步修正
+- **部署与验证**：`tcb fn deploy health -e <env> --path /api/health --runtime Nodejs18.15 --force`（事件型、不带 `--httpFn`，Day 15 的坑未再踩）→ 公网 HTTP 200：`{"ok":true,"service":"hot-search-demo","time":"2026-10-09T03:46:27.877Z"}`
+- **前端重新部署**：`sync-dist.js` + `hosting deploy`，4 资源公网全 200（`/`、`/app.js`、`/styles.css`、`/data/hot.json`）
+- **api-contract.md**：统一约定（`ok` 式外壳、错误码表）+ health 完整规格 + 6 个占位接口（GET /api/hot、GET /api/favorites、POST /api/sync〔Day 17 手动触发写 trends 表，不做定时〕、POST /api/favorites、PATCH /api/favorites/:id、DELETE /api/favorites/:id〔后三个第 4 周〕）+ 接口总览表
+- **README**：部署章节重写为 A–G（云函数步骤 / 前端步骤 / 验证方法 / 固定流程 / 两个坑 / 环境信息 / 契约指引），并注明「前端尚未调用任何接口、CORS 未配置」
+- **交付截图（打卡/状态截图/）**：`api-health-公网JSON.png`（地址栏 + JSON）、`前端mock-公网页面.png`（地址栏 + 首页）；截图脚本 shot-edge2.py 升级支持**重复 `--click`**（本次两点：先点风险确认页，再点弹层外空白关掉误开的详情弹层）
+
+### 附：`cloudfunctions/health/index.js` 逐段解释（余力加练，已按 10-09 新版更新）
 
 | 段 | 代码 | 作用 |
 | --- | --- | --- |
-| 1 | `const SERVICE_NAME / SERVICE_VERSION` | 常量集中定义：服务标识与版本号写在一处，改版本只动这里 |
-| 2 | `exports.main = async (event, context) => {...}` | 云函数入口。`event` 是触发时传入的数据（HTTP 访问时是整个请求），`context` 含运行环境信息（如 `namespace` = 环境 ID） |
-| 3 | `const payload = { code, message, data }` | 组装统一响应外壳。`data.status` 固定 `healthy`；`env` 优先取 `context.namespace`，取不到降级 `unknown`，**不抛错**（探针绝不能自己先挂） |
-| 4 | `uptime: Math.round(process.uptime())` | 实例已运行秒数，用来判断是不是刚冷启动的实例 |
-| 5 | `time: new Date().toISOString()` | UTC ISO 8601 时间，服务端不做本地时区拼接（由前端按用户时区展示） |
-| 6 | `return { statusCode: 200, headers, body: JSON.stringify(payload) }` | 「集成响应」格式：由函数自己决定状态码与响应头，HTTP 访问服务原样转给调用方 |
+| 1 | `const SERVICE_NAME = "hot-search-demo"` | 常量集中定义：服务标识写在一处，改名只动这里（契约改版后不再输出 version/uptime/env 等字段） |
+| 2 | `exports.main = async () => {...}` | 云函数入口。事件型函数：HTTP 访问服务把整个请求作为 `event` 传入（本探针刻意不解析请求） |
+| 3 | `const payload = { ok, service, time }` | 按契约组装响应体：`ok:true` 表示服务正常；`time` 用 UTC ISO 8601，服务端不做本地时区拼接（由前端按用户时区展示） |
+| 4 | `return { statusCode: 200, headers, body: JSON.stringify(payload) }` | 「集成响应」格式：由函数自己决定状态码与响应头，HTTP 访问服务原样转给调用方 |

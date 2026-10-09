@@ -75,32 +75,85 @@ npx serve .
 
 登录、支付、复杂缓存、数据库、React/Vite 框架——均按 PRD 3.2 与 TECH_DESIGN 第 14 章推迟。
 
-## 部署到 CloudBase（Day 7 起已上线，环境：`acknowledge-d9gnqrpy89f1f7d21`）
+## 部署到 CloudBase（公网地址）
 
-**每次改完代码的固定流程**（先提交、再部署，TECH_DESIGN 10.5）：
+环境：`acknowledge-d9gnqrpy89f1f7d21`（上海 ap-shanghai，体验版，到期 2027-03-22）
+
+| 用途 | 公网地址 |
+| --- | --- |
+| 前端页面 | `https://acknowledge-d9gnqrpy89f1f7d21-1493626656.tcloudbaseapp.com/` |
+| 健康检查接口 | `https://acknowledge-d9gnqrpy89f1f7d21.service.tcloudbase.com/api/health` |
+
+### A. 云函数 `/api/health` —— 从创建到公网访问
+
+1. **写代码**：`cloudfunctions/health/index.js`（**事件型**云函数 `exports.main`，返回 `{ ok, service, time }`）
+2. **登录 CLI**（首次，本机已登录、凭据在 `~/.cloudbase/auth.json`）：`tcb login`
+3. **部署 + 开通 HTTP 访问路径**（一条命令完成）：
+   ```
+   tcb fn deploy health -e acknowledge-d9gnqrpy89f1f7d21 --path /api/health --runtime Nodejs18.15 --force
+   ```
+   成功会打印：`Cloud function HTTP access service link: https://…service.tcloudbase.com/api/health`
+4. **验证**：见 C。
+
+### B. 前端 mock 版 —— 从构建到公网访问
+
+> 本项目是**纯静态**原生页面（不是 React —— 见「本期明确不做」），「构建」= 把源码同步进 `dist/`。
+
+1. **同步静态文件**：`node scripts/sync-dist.js`（把 `index.html / styles.css / app.js / data/` 复制进 `dist/`）
+2. **部署到静态托管**：
+   ```
+   tcb hosting deploy dist -e acknowledge-d9gnqrpy89f1f7d21 --verify
+   ```
+3. **验证**：见 C。
+
+### C. 部署后怎么验证
+
+**云函数**：浏览器打开
+`https://acknowledge-d9gnqrpy89f1f7d21.service.tcloudbase.com/api/health`
+→ 应看到**一段 JSON**（不是网页）：
+
+```json
+{ "ok": true, "service": "hot-search-demo", "time": "2026-10-09T03:46:27.877Z" }
+```
+
+- `ok` 为 `true`：服务正常
+- `time` **每次刷新都会变**：说明真的在跑云函数，不是缓存的静态文件
+- 首次在浏览器打开可能先看到 CloudBase「页面访问提示」确认页，点「确定访问」即见 JSON
+- 命令行等价验证：`curl https://…service.tcloudbase.com/api/health`
+
+**前端**：浏览器打开
+`https://acknowledge-d9gnqrpy89f1f7d21-1493626656.tcloudbaseapp.com/`
+→ 应看到「今日热搜」首页（微博 / 抖音 / B站 三栏榜单 + 顶部筛选）；
+再开 `…/#/platforms`（平台列表页）、`…/#/detail/<条目>`（详情页）应能直达。
+手机连任意网络开同一地址也应能打开（单列布局）。
+
+### D. 每次改完代码的固定流程
 
 ```
 node scripts/sync-dist.js                        # ① 把最新静态文件同步进 dist/
 git add ... && git commit ...                    # ② 提交（标题 Day X｜…）
 git push                                         # ③ 推送
-# ④ 部署（见下）→ 线上验证刚改的行为
+tcb hosting deploy dist -e acknowledge-d9gnqrpy89f1f7d21 --verify   # ④ 部署前端
+# 改了云函数再补一步：
+tcb fn deploy health -e acknowledge-d9gnqrpy89f1f7d21 --path /api/health   # ⑤ 部署函数
 ```
 
-**部署命令（实测可用，CloudBase CLI 已登录）**
+> **接口还没接**：前端页面目前仍读本地 `data/hot.json`，**没有**调用 `/api/health` 或任何接口；
+> 跨域（CORS）也**尚未配置**。等接接口那天再做（见 `api-contract.md` 1.1 的跨域提醒）。
 
-```
-tcb hosting deploy dist -e acknowledge-d9gnqrpy89f1f7d21 --verify   # 前端静态托管
-tcb fn deploy health -e acknowledge-d9gnqrpy89f1f7d21 --path /api/health   # /api/health 云函数
-```
-
-- 线上前端：`https://acknowledge-d9gnqrpy89f1f7d21-1493626656.tcloudbaseapp.com/`
-- 线上健康检查：`https://acknowledge-d9gnqrpy89f1f7d21.service.tcloudbase.com/api/health`（应返回 `{"code":0,...}`）
-- 接口契约见 `api-contract.md`；环境信息（额度/到期）用 `tcb env list` / `tcb env usage` 查看
-
-**两个实测踩过的坑（别再踩）**
+### E. 两个实测踩过的坑（别再踩）
 
 1. `/api/health` 必须用**事件型云函数** + `--path`（**不要**加 `--httpFn`）。
    `--httpFn` 是 Web 函数（要 `scf_bootstrap` 自起端口），它建的访问路径会报
    `400 FUNCTIONS_PARAM_INVALID: FunctionType parameter is invalid`。
 2. 环境默认域名不允许手工加路由（`tcb routes add` 会报 system internal domain）；
    要挂路径就用 `fn deploy --path`，要挂自定义域名才走 `routes`。
+
+### F. 环境信息（额度 / 到期）
+
+`tcb env list` 看环境 ID、到期日期与状态；`tcb env usage` 看额度消耗。
+本环境为体验版，到期 **2027-03-22**，当前额度消耗 0.00。
+
+### G. 接口契约
+
+所有接口（已实现 1 个 + 占位 6 个）的路径、方法、参数、响应形状、错误返回，统一见 `api-contract.md`。
