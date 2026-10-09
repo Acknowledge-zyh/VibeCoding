@@ -168,6 +168,33 @@ body {
 }
 /* 筛选无结果与"平台降级"共用 column-down 的留白布局，语义不同 */
 .column-none { color: var(--ink-2); }
+/* ★ Day 12 续：无结果两行式文案——主文案固定「没有找到相关内容」，副文案说明条件与出路（DR-11：差异 ≥2 个维度） */
+.column-none .none-title { margin-bottom: var(--sp-2); font-weight: 700; color: var(--ink); }
+.column-none .none-hint { font-size: var(--fs-xs); color: var(--ink-2); }
+
+/* ---------- ③-b 平台筛选 chips（Day 12 续）---------- */
+.filter-bar-platform { padding-top: 0; }          /* 紧接上一行筛选条，间距仍落在 4px 刻度上（DR-4） */
+.chip-group { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.chip {
+  min-height: 40px;                               /* 点击区 ≥40px（DR-7） */
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--line-strong);           /* 描边 3.27:1（DR-2） */
+  border-radius: var(--radius-sm);                /* 与按钮同级圆角（DR-8） */
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover { background: var(--hover); }         /* 悬停可见（DR-3） */
+.chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }   /* 键盘轮廓（DR-3） */
+.chip[aria-pressed="true"] {                      /* 选中态三通道：描边 + 底色 + 字重，不只靠颜色（DR-1） */
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
 
 /* ---------- ③ 榜单区：桌面三栏并排 ---------- */
 .board {
@@ -179,6 +206,9 @@ body {
   margin: 0 auto;
   width: 100%;
 }
+
+/* ★ Day 12 续 平台筛选生效：只显示一栏，收成单列居中；容器几何尺寸不变，页面其它区块不位移 */
+.board--single { grid-template-columns: minmax(0, 620px); justify-content: center; }
 
 /* 一栏 = 一张卡片 */
 .column {
@@ -377,4 +407,97 @@ body {
   /* 弹层全屏化（PRD 5.2） */
   .modal { width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; padding-top: var(--sp-7); }
   .drawer { width: 100vw; }
+}
+
+/* ---------- ★ Day 13：三个可独立访问视图（hash 路由）----------
+   新增三块：顶栏一级导航、平台列表页、热搜详情页。全部复用现有设计令牌，
+   没有引入新的颜色/间距/字号取值（DR-4/DR-8）。 */
+
+/* 一级导航：首页 / 平台列表（详情页要落到具体条目，入口在条目上，不占导航位） */
+.view-nav { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.nav-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 0 var(--sp-3);          /* 点击区 ≥40px（DR-7） */
+  font-size: var(--fs-base); color: var(--ink); text-decoration: none;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+}
+.nav-link:hover { background: var(--hover); }         /* 悬停可见（DR-3） */
+.nav-link:active { background: var(--hover-strong); } /* 按压反馈 */
+.nav-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* 当前视图：描边 + 底色 + 字重三通道，不只靠颜色（DR-3/DR-6） */
+.nav-link[aria-current="page"] {
+  border-color: var(--brand); background: var(--brand-soft); color: var(--brand-ink); font-weight: 700;
+}
+
+/* 视图容器：三选一显示（未激活的加 .hidden），宽度与榜单区一致 */
+.view { max-width: var(--page-max); margin: 0 auto; width: 100%; }
+.view-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-4) var(--sp-4) 0; }
+.view-title { font-size: var(--fs-xl); }
+.view-sub { font-size: var(--fs-xs); color: var(--ink-2); font-variant-numeric: tabular-nums; } /* DR-12 */
+
+/* 状态块的行动区（可能有两个出口，如「返回首页 + 去平台列表」） */
+.state-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: center; }
+
+/* ---------- 平台列表页：每平台一张卡 ---------- */
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));  /* 桌面三列、手机单列（沿用 --cols 开关） */
+  gap: var(--gap);
+  padding: var(--sp-4);
+}
+.platform-card {
+  display: flex; flex-direction: column; min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: var(--sp-4);
+}
+.platform-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.platform-name { font-size: var(--fs-lg); font-weight: 700; }
+.platform-badge {
+  font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-2);
+  border-radius: 6px; background: var(--hover); color: var(--ink-2); white-space: nowrap;
+}
+.platform-badge-down { background: #fffaf0; color: #ad6800; }   /* 与顶栏警示条同一套警示色 */
+.platform-stats { font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: var(--sp-3); font-variant-numeric: tabular-nums; }
+.platform-preview { display: flex; flex-direction: column; gap: var(--sp-2); }
+.platform-empty { font-size: var(--fs-xs); color: var(--ink-2); text-align: center; padding: var(--sp-4) 0; }
+.platform-card-foot { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--line); display: flex; }
+
+/* ---------- 热搜详情页：面包屑 + 详情卡 + 上下条 ---------- */
+.crumb {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-4) 0; font-size: var(--fs-xs); color: var(--ink-2);
+}
+.crumb a { color: var(--brand-ink); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+.crumb a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.crumb-current { color: var(--ink); font-weight: 700; }
+
+.detail-page { padding: var(--sp-4); }
+.detail-card {
+  max-width: 720px; margin: 0 auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: var(--sp-5);
+}
+.detail-meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: var(--sp-2); }
+.detail-platform { color: var(--brand-ink); font-weight: 700; background: var(--brand-soft); padding: var(--sp-1) var(--sp-2); border-radius: 6px; }
+.detail-title { font-size: var(--fs-xl); line-height: 1.5; margin: var(--sp-1) 0 var(--sp-4); overflow-wrap: anywhere; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.detail-pager {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2);
+  margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line);
+}
+/* 到边界的那一侧：只显示文字，不做成"点不动的假按钮" */
+.pager-gap {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--sp-3);
+  font-size: var(--fs-xs); color: var(--ink-2);
+  border: 1px dashed var(--line); border-radius: var(--radius-sm);
+}
+.detail-hint { font-size: var(--fs-xs); color: var(--ink-2); margin-top: var(--sp-3); }
+
+@media (max-width: 900px) {
+  .view-head { padding: var(--sp-3) var(--sp-3) 0; }
+  .platform-grid { grid-template-columns: minmax(0, 1fr); padding: var(--sp-3); }
+  .crumb { padding: var(--sp-3) var(--sp-3) 0; }
+  .detail-page { padding: var(--sp-3); }
+  .detail-card { padding: var(--sp-4); }
 }

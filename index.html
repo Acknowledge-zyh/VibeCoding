@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<!-- 「今日热搜」首页 ｜ 按 PRD 重建首页前端
-     结构（对齐 PRD 5.1）：
-       ① 顶栏：标题 + 更新时间 + 我的收藏入口 + 刷新按钮
-       ② 提示条：样本数据说明 / 更新失败提示
-       ③ 榜单区：桌面三栏并排（微博 / 抖音 / B站），每栏 Top 10
-       ④ 四种页面状态：加载中 / 成功 / 空 / 错误
-     两个浮层：详情弹层（PRD F2）、收藏抽屉（PRD F3）
-     明确不做：登录、支付、个性化推荐（PRD 3.2） -->
+<!-- 「今日热搜」前端 ｜ 三个可独立访问视图 + 四种状态
+     ── 视图与路径（hash 路由；单页内切换，不用路由库：纯静态托管无需 rewrite、
+        刷新/分享都能停在原视图、前进后退天然可用、零依赖）
+        #/home              首页：榜单（桌面三栏 / 手机单列）+ 关键词 & 平台筛选
+        #/home/<平台名>      首页·单平台（平台筛选预置，从平台列表页点进来）
+        #/platforms         平台列表页：各平台的条数、状态与 Top3 预览
+        #/detail/<编码键>    热搜详情页：可独立打开、可分享、带上下条
+        空 hash / 未知路径 → 重定向 #/home（兜底，绝不白屏）
+     ── 两个浮层保留（PRD F2/F3 不破）：条目点击一律弹层，弹层内可「打开详情页」
+     ── 四种状态（每个列表视图都有，文案各自贴合场景）：
+        加载中（骨架屏）/ 加载成功 / 没有结果（筛选无匹配 + 数据为空两种）/ 请求失败（有旧数据则保留旧数据）
+     明确不做（PRD 3.2）：登录、支付、个性化推荐 -->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -16,12 +20,17 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- ① 顶栏：标题 + 更新时间 + 收藏入口 + 刷新 -->
+  <!-- ① 顶栏：标题 + 更新时间 + 视图切换 + 收藏入口 + 刷新 -->
   <header class="topbar">
     <div class="topbar-main">
       <h1 class="topbar-title">今日热搜</h1>
       <span class="topbar-time" id="updated-at">更新中…</span>
     </div>
+    <!-- 一级导航：三个视图里「首页 / 平台列表」是并列入口；详情页要落到具体条目，入口在条目上 -->
+    <nav class="view-nav" aria-label="视图切换">
+      <a class="nav-link" id="nav-home" href="#/home" aria-current="page">首页</a>
+      <a class="nav-link" id="nav-platforms" href="#/platforms">平台列表</a>
+    </nav>
     <div class="topbar-actions">
       <button class="btn" id="btn-favorites" type="button">我的收藏（<span id="fav-count">0</span>）</button>
       <button class="btn btn-primary" id="btn-refresh" type="button">刷新</button>
@@ -31,8 +40,8 @@
   <!-- ② 提示条：默认说明数据来源；更新失败时改用文字提醒（PRD 第 7 节：绝不显示空白页） -->
   <p class="notice" id="notice">当前为本地样本数据（标题、热度均为示例）；接上云函数后自动换成真实热搜。</p>
 
-  <!-- ③ 筛选条（Day 12：按 skills/filter-interaction/SKILL.md 实现，三态齐全） -->
-  <div class="filter-bar">
+  <!-- ③ 筛选条：首页与平台列表页共用（详情页是单条数据，不显示）；按 skills/filter-interaction/SKILL.md 实现，三态齐全 -->
+  <div class="filter-bar" id="filter-bar">
     <label class="filter-label" for="filter-input">关键词筛选</label>
     <input class="filter-input" id="filter-input" type="search" autocomplete="off"
            placeholder="试试输入：中秋" />
@@ -40,8 +49,31 @@
     <span class="filter-count" id="filter-count" aria-live="polite"></span>
   </div>
 
-  <!-- ④ 榜单区：三栏由 app.js 渲染（含四种状态） -->
-  <main class="board" id="board" aria-label="热搜榜单"></main>
+  <!-- ③-b 平台筛选：只在首页出现（平台列表页本身就是按平台分的，再筛一次会自相矛盾） -->
+  <div class="filter-bar filter-bar-platform" id="filter-bar-platform" role="group" aria-label="平台筛选">
+    <span class="filter-label" id="platform-label">平台筛选</span>
+    <div class="chip-group" id="platform-chips" role="group" aria-labelledby="platform-label"></div>
+  </div>
+
+  <!-- 视图 1／3：首页 —— 榜单三栏，四种状态由 app.js 渲染进 #board -->
+  <main class="view" id="view-home" aria-label="热搜榜单">
+    <div class="board" id="board"></div>
+  </main>
+
+  <!-- 视图 2／3：平台列表页 —— 每个平台一张卡（条数 / 状态 / Top3 预览 / 进完整榜单） -->
+  <main class="view hidden" id="view-platforms" aria-label="平台列表">
+    <div class="view-head">
+      <h2 class="view-title">平台列表</h2>
+      <span class="view-sub" id="platform-summary" aria-live="polite"></span>
+    </div>
+    <div class="platform-grid" id="platform-grid"></div>
+  </main>
+
+  <!-- 视图 3／3：热搜详情页 —— 可独立访问；内容（含四种状态）由 app.js 渲染进 #detail-page -->
+  <main class="view hidden" id="view-detail" aria-label="热搜详情">
+    <nav class="crumb" id="detail-crumb" aria-label="面包屑导航"></nav>
+    <div class="detail-page" id="detail-page"></div>
+  </main>
 
   <!-- 浮层 1：详情弹层（PRD F2） -->
   <div class="overlay hidden" id="detail-overlay">
@@ -58,6 +90,7 @@
         <button class="btn" id="detail-fav" type="button">☆ 收藏</button>
         <button class="btn" id="detail-note" type="button">✎ 写备注</button>
         <button class="btn" id="detail-copy" type="button" aria-live="polite">⧉ 复制链接</button>
+        <button class="btn" id="detail-page-btn" type="button">↗ 打开详情页</button>
         <a class="btn btn-primary" id="detail-link" target="_blank" rel="noopener">去原平台查看 ↗</a>
       </div>
       <div class="note-area hidden" id="note-area">
@@ -83,7 +116,7 @@
     </aside>
   </div>
 
-  <!-- 轻提示（toast）：复制成功等即时反馈，2.5 秒自动消失 -->
+  <!-- 轻提示（toast）：刷新成功、复制成功等即时反馈，2.4 秒自动消失 -->
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>

@@ -237,3 +237,28 @@
 - [x] **④ 两张截图（带地址栏）**：`打卡/状态截图/Day12-筛选有结果.png`（localhost:8000/?filter=中秋，含关键词+计数+结果）、`Day12-SKILL文件.png`（地址栏显示 skills/filter-interaction/SKILL.md 全文）
 - [x] **⑤ 提交推送**：改动文件清单见本节末尾；commit 标题「Day 12｜…」两行说明；推送后抽查
 - 文件清单归属：app.js/styles.css/index.html + skills/* + AGENTS.md 全部属于 Day 12（收藏状态机 / 抽屉取消收藏 / Skill+筛选三个任务）
+
+## 二十六、Day 12 续：关键词 + 平台双维度筛选（2026-09-29 傍晚）
+
+> 需求：关键词或平台筛选后只显示匹配内容；无匹配显示「没有找到相关内容」；清空后恢复完整列表；保持已调用的设计 Skill（frontend-review + 本项目 filter-interaction）。
+
+- **实现**：index.html 新增平台筛选条（`#platform-chips`，按钮由 app.js 按 PLATFORM_ORDER 渲染）；app.js 新增 `filterPlatform`/`activePlatforms()`/`filterDesc()`/`renderPlatformChips()`/`syncPlatformChips()`/`setPlatform()`/`refreshFilterUI()`，`renderBoard()` 按当前平台渲染并加 `.board--single`（单列 620px 居中，页面其它区块不位移）；styles.css 新增 `.chip` 系列（≥40px 点击区、aria-pressed 三通道选中态、focus-visible）与无结果两行文案样式
+- **组合语义**：关键词 × 平台 = AND；计数分母 = 当前平台范围全量；「清除筛选」一键复位两个维度；空态主文案固定「没有找到相关内容」+ 副文案说明当前条件与出路；新增预览开关 `?platform=平台名`
+- **Skill 升级**：filter-interaction v1→v2（补分类维度 6 条清单、组合无结果测试、两档宽度要求、统一空态文案），调用记录见 `CALL_LOG.md` 第 2 次
+- **验证（无头浏览器实测全过）**：关键词 1/30、平台 10/10（单列 620px）、组合 1/10、组合无结果 0/10 + 正确文案、清空恢复 30 行 + chips 回「全部」+ 焦点回输入框；回归=收藏状态机/详情弹层/键盘聚焦 chips；360px 无溢出（chips 单行 4 个各 40px 高）、1440px 布局不变
+- **截图目检抓到真 bug**：预览开关路径重构后漏同步全局 `filterKeyword`（输入框有字但不生效，10/10）——已修（预览分支直接 `filterKeyword = qf.trim()`），复测 1/10 ✓；另有一次 Edge 截到导航中间态（输入框只显示「不」），无头复验代码正确，重截即恢复
+- 交付截图：`打卡/状态截图/Day12续-平台筛选有结果.png`、`Day12续-筛选无结果.png`、`Day12续-清空恢复.png`（均带地址栏）
+- 未提交：等用户确认后提交推送
+
+## 二十七、Day 13 主任务：3 个独立视图 + 列表数据四状态补齐（2026-10-08/09）
+
+> 需求：按 PRD 规划并实现 3 个可独立访问视图（首页、平台列表页、热搜详情页），为列表数据补齐加载中、加载成功、没有结果、请求失败四种状态，每种状态有用户看得懂的反馈；不新增登录和支付。
+
+- **PRD 冲突处理**：PRD 5.2 写的是「单页 + 详情弹层」，与「3 个独立视图」冲突——取并集：**弹层保留**（列表内快速查看），**另增可分享的独立详情页**（hash 路由，可直达、可刷新保址、浏览器前进后退即返回）
+- **路由表**（hash 路由，零依赖）：`#/home`（默认首页，可带 `#/home/<平台名>`）、`#/platforms`（平台列表页）、`#/detail/<平台>::<标题>`（URL 编码后的条目 key）；未知路径统一归一 `#/home`，保证「地址栏 = 当前视图」
+- **实现**：index.html 重写为 3 个视图容器（`#view-home`/`#view-platforms`/`#view-detail`）+ `.view-nav` 一级导航（aria-current）+ `#platform-grid` + `#detail-page`（含面包屑 `#detail-crumb`、收藏/备注/复制 `#page-fav`/`#page-note`/`#page-copy`、上下条 `#detail-pager`），保留旧 `#detail-overlay` 弹层；app.js 新增 `parseRoute()`/`renderView()`/`renderHome()`/`renderPlatforms()`/`renderDetailPage()`/`makeStateBlock()`/`buildPlatformCard()`/`buildDetailCard()`/`copyLink()` 等；styles.css 新增 `.view-nav`/`.nav-link`/`.platform-card`/`.detail-card`/`.crumb` 等
+- **四状态**：三视图共用 `makeStateBlock()` 状态块（加载中/没有结果/请求失败/正常），详情页另有「没有找到这条热搜」（链接失效或已下榜）+ 返回首页/去平台列表两条出路；预览开关：`?state=loading|empty|error`、`?filter=`、`?platform=`、`?favfail=1`、`?demo=all`
+- **真 bug 修复**：平台列表页点「清除筛选」被踢回首页——原代码 `history.replaceState(..., "#/home")` 硬写视图；改为只清筛选条件（`filterKeyword=""`、`filterPlatform=""`、同步 chips、`renderView()`、焦点回输入框），**不换视图**。已浏览器复验通过
+- **验证（浏览器实测 20+ 项全过）**：A 首页正常 / B 平台列表 / C 单平台 / D 弹层→详情页 / E 下一条 / F1-F4 首页四态 / G1-G4 平台四态 / H1-H3 详情四态 / I1-I2 清除筛选不换视图 / J1-J4 详情收藏·备注·复制+失败态 / K1-K4 弹层回归·刷新反馈·未知路由归一·断网保留旧数据 / L1-L2 360px 与 1440px 无溢出
+- 交付截图：`打卡/状态截图/Day13-1-视图-首页.png` ～ `Day13-8-状态-详情未找到.png` 共 8 张（1-3 三视图、4-7 列表/详情状态、8 详情未找到；Edge 测试 profile 有「无法更新」系统弹窗遮侧栏一角，属环境干扰、证据完整）
+- 提交说明：本次提交同时包含 Day 12 续（关键词+平台双维度筛选、filter-interaction Skill v1→v2）——两者在 app.js 中交织无法拆分，已并入 Day 13 一次提交
